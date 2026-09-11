@@ -1,0 +1,167 @@
+  <!DOCTYPE html> <!-- אומר לדפדפן שזה HTML -->          
+  <html lang="he"> 
+  <head>    
+     <meta charset="UTF-8">   <!-- בלי זה העברית תראה כגיבריש -->
+    <!-- מתאים את האתר אוטומטית למסך של הטלפון הנייד -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> <!-- אייקונים-->
+    <link rel="stylesheet" href="../pages/style.css">  <!-- מחבר עיצוב -->
+    <title>דף התחברות מערכת חתימה+ | חתימה דיגיטלית מאובטחת</title>
+  </head>
+
+  <body> 
+      <div class="login-cntainer"> <!-- יוצר קופסא שתיהיה על כל המסך-->
+      <div class="left-side"></div> <!-- החצי השמאלי של המסך -->
+      <div class="right-side"> <!-- פותח את חצי המסך הימני של הקופסא -->
+        <div class="login-box"> <!-- קופסה לטופס ההתחברות שנמצא בצד הלבן -->
+          <div class="forms-slider"> <!-- הקטע שתזוז ימינה ושמאלה באנימציה -->
+            <div class="login-panel"> <!-- התחלה של טופס ההתחברות -->
+        <div class="login-logo"> <!--  הלוגו מעל כותרת ההתחברות -->
+          <img src="../images/logo.png" alt="חתימה+ לוגו">
+        </div>
+         <h2>Login Account</h2> 
+        <p class="login-desc">Don't have an account? <a href="#" id="toSignupBtn">Sign up</a></p>   
+              <form id="loginForm"> 
+            <div class="form-box"> <!-- השדה של האימייל -->
+              <label for="email">Email Address</label> 
+              <input type="email" id="email" required placeholder="name@company.com"> 
+           </div>
+           <div class="form-box"> <!-- פתיחת שדה לסיסמא -->
+             <label for="password">Password</label> <!-- הכותרת הקטנה שמופיעה מעל תיבת הסיסמה -->
+             <div class="password-wrapper">
+               <input type="password" id="password" required placeholder="••••••••"> 
+             </div>
+          </div>
+
+          <button type="submit" class="login-button">Login to Account</button> <!-- כפתור ההתחברות -->
+        </form>
+        
+        <div class="options-box"> <!--  זכור אותי ושכחתי סיסמה -->
+        <a href="reset-password.html" class="forgot-pass">Forgot password?</a>    
+              <label class="remember-me">
+           <input type="checkbox"> <!-- תיבת הסימון -->
+            Remember me 
+         </label>
+      </div>
+
+<div class="social-login-box">
+    <!-- שורת ההפרדה של ה-OR -->
+    <div class="or-separator">
+        <span>or</span>
+    </div>
+
+    <!-- שלושת כפתורי ההתחברות המהירה -->
+    <button class="social-btn google-btn">
+        <img src="../images/google.png" alt="Google"> Continue with Google
+    </button>
+    
+    <button class="social-btn facebook-btn">
+        <img src="../images/facebook.png" alt="Facebook"> Continue with Facebook
+    </button>
+    
+    <button class="social-btn microsoft-btn">
+        <img src="../images/microsoft.png" alt="Microsoft"> Continue with Microsoft
+    </button>
+</div> <!-- סוף טופס ההתחברות -->
+</div> <!-- סגירה של login-panel -->
+<div class="signup-panel"> <!-- התחלה של טופס ההרשמה -->
+  <h2>Create Account</h2>
+<p class="login-desc">Already have an account? <a href="#" id="toLoginBtn">Log in</a></p>
+<form id="signupForm">
+  <div class="form-box">
+    <label for="signupName">Full Name</label>
+    <input type="text" id="signupName" required placeholder="Israel Israeli">
+  </div>
+
+  <div class="form-box">
+    <label for="signupUsername">Username</label>
+    <input type="text" id="signupUsername" required placeholder="israel123">
+  </div>
+
+  <div class="form-box">
+    <label for="signupEmail">Email Address</label>
+    <input type="email" id="signupEmail" required placeholder="name@company.com">
+  </div>
+
+  <div class="form-box">
+    <label for="signupPassword">Password</label>
+    <input type="password" id="signupPassword" required placeholder="••••••••">
+  </div>
+
+<div class="form-box" style="margin: 20px; margin-top: -20px;">
+  <label class="remember-me">
+    <input type="checkbox" required>
+    אני מאשר/ת את <a href="#" class="forgot-pass">תנאי השימוש ומדיניות הפרטיות</a>
+  </label>
+</div>
+
+  <button type="submit" class="login-button">Create Account</button>
+
+  <div class="social-login-box">
+    <!-- שורת ההפרדה -->
+    <div class="or-separator">
+        <span>or</span>
+    </div>
+
+    <!-- כפתור הרשמה עם גוגל -->
+    <button class="social-btn google-btn">
+        <img src="../images/google.png" alt="Google"> Sign up with Google
+    </button>
+        <button class="social-btn facebook-btn">
+        <img src="../images/facebook.png" alt="Facebook"> Sign up with Facebook
+    </button>
+    
+    <button class="social-btn microsoft-btn">
+        <img src="../images/microsoft.png" alt="Microsoft"> Sign up with Microsoft
+    </button>
+</div>
+</form>
+</div> <!-- סגירה של forms-slider -->
+</div> <!-- סגירה של login-box -->
+</div>
+    </div> <!-- סגירה של צד ימין -->
+
+<script>
+
+// מעבר מהתחברות לדף ההרשמה 
+const toSignupBtn = document.getElementById('toSignupBtn'); //  הכפתור של ההרשמה לפי האיידי שלו
+const formsSlider = document.querySelector('.forms-slider'); //  מוצא את כל החלק של הריבוע שצריך לזוז הצידה
+const loginPanel = document.querySelector('.login-panel'); /* מוצא את הריבוע שמחזיק את כל שדות ההתחברות ביחד */
+const signupPanel = document.querySelector('.signup-panel'); /* מוצא את הריבוע שמחזיק את כל שדות ההרשמה ביחד */
+
+
+toSignupBtn.onclick = function() // מעלים את ההתחברות ומפעיל את ההרשמה
+{
+    loginPanel.style.display = 'none';   // מוחק/מסתיר את ההתחברות
+    signupPanel.style.display = 'flex';  // מציג את ההרשמה
+};
+
+const toLoginBtn = document.getElementById('toLoginBtn'); //  הכפתור של החזרה להתחברות
+toLoginBtn.onclick = function() // מחזיר את ההתחברות ומעלים את ההרשמה
+{
+    signupPanel.style.display = 'none';  // מעלים את ההרשמה
+    loginPanel.style.display = 'flex';   // מחזיר את ההתחברות
+};
+// סיום קטע המעבר מהתחברות להרשמה
+
+const loginForm = document.getElementById('loginForm'); // טופס ופרטי ההתחברות
+const signupForm = document.getElementById('signupForm'); //  טופס ההרשמה ופרטי התחברות
+signupForm.onsubmit = function(e) 
+{
+    e.preventDefault(); // עוצר את הרענון האוטומטי של הדף
+    const name = document.getElementById('signupName').value; // שומר את השם המלא שהמשתמש הקליד
+    const username = document.getElementById('signupUsername').value; // שומר את שם המשתמש שהוקלד
+    const email = document.getElementById('signupEmail').value; // שומר את האימייל שהוקלד
+    const password = document.getElementById('signupPassword').value; // שומר את הסיסמה שהוקלדה
+    const userData =
+     {
+      fullName: name,
+      username: username,
+      email: email,
+      password: password
+    };
+}
+</script>
+
+</body> 
+</html>

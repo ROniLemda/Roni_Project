@@ -1,0 +1,379 @@
+* { 
+    margin: 0; /* מוחק את הרווחים החיצוניים  שהדפדפן מייצר אוטומטית */
+    padding: 0; /* מוחק את הרווחים הפנימיים שהדפדפן מייצר אוטומטית */
+    box-sizing: border-box; /* שומר על הגודל של הטפסים שלא יתרחבו */
+    font-family: 'Wix Madefor Text', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; /* פונט הייטק נקי כמו של Wix */
+ }
+
+.login-cntainer /* הקופסא של כל המסך */
+{
+    display: flex; /* מפצל את המסך */
+    height: 100vh; /* 100% המסך של המשתמש */
+    width: 100vw; /* 100% רוחב המסך */
+    overflow: hidden;
+}
+
+.left-side {
+    width: 50%; /* החצי השמאלי של המסך */
+    flex: 0 0 50%;
+    height: 100vh; /* 100% גובה המסך */
+    background-image: url('../images/login_page1.png'); /* תמונת רקע */
+    background-repeat: no-repeat; /* מונע כפילות */
+    background-size: cover; /* מותח את התמונה באופן מושלם על כל החצי */
+    background-position: center; /* ממרכז את התמונה */
+}
+
+.right-side {
+    width: 50%; /* החצי הימני של המסך */
+    flex: 0 0 50%;
+    height: 100vh;
+    background-color: #ffffff; 
+    display: flex; /* מפעיל אפשרות לסדר את התוכן של צד ימין יפה */
+    justify-content: center; /* ממרכז את כל התוכן בצורה באורך */
+    align-items: center; /* ממרכז את כל התוכן באמצע ברוחב */
+    padding: 20px; /* נותן רווח כדי שלא יידבק לקצוות של המסך */
+    overflow-y: auto;
+}
+
+.or-separator {
+    display: flex; 
+    align-items: center; /* גובה מרכז לקווים ולמילה */
+    text-align: center; /* ממרכז את המילה */
+    margin: 20px 0; /* רווח מלמעלה ומלמטה */
+    color: #64748b; 
+    font-size: 14px; 
+    gap: 15px; /* מייצר רווח קבוע בין המילה or לקווים בצדדים */
+}
+
+/* הקווים שנוצרים בצדדים */
+.or-separator::before,
+.or-separator::after {
+    content: ""; /* חובה כדי שהקו יופיע */
+    flex: 1; /* מותח את הקו למלא את הצד */
+    height: 1px; /* עובי הקו */
+    background-color: #cbd5e1; /* צבע אפור דק */
+}
+
+
+.social-btn {
+    width: 100%; /* מותח את הכפתורים לרוחב מלא */
+    padding: 16px; 
+    background-color: #ffffff; /* רקע לבן נקי לכל הכפתורים */
+    display: flex; 
+    justify-content: center; /* ממרכז את הלוגו והטקסט לאמצע */
+    align-items: center; /* שם את הלוגו והטקסט באותו גובה */
+    gap: 12px; /* רווח בין הלוגו למילים */
+    border: 1px solid #cbd5e1; /* קו מסגרת אפור דק */
+    border-radius: 12px; /* מעגל את הפינות של הכפתור */
+    font-size: 16px; 
+    font-weight: 600; 
+    color: #334155; /* צבע של המילים */
+    cursor: pointer; /* הופך את העכבר ליד של לחיצה */
+} 
+
+.social-login-box {
+    display: flex; /* מפעיל פלקס */ 
+    flex-direction: column; /* מסדר את הכפתורים מלמעלה למטה */
+    gap: 12px; /* רווח קבוע ונקי בין כפתור לכפתור */
+}
+
+.social-btn img {
+    width: 20px; /* קובע רוחב קטן ולוגו חמוד */
+    height: 22px; /* קובע גובה קטן ולוגו חמוד */
+    object-fit: contain; /* שומר שהתמונה לא תתעוות */
+}
+
+
+input {
+    width: 100%; /* מותח את התיבות לרוחב מלא */
+    padding: 14px; /* רווח פנימי */
+    margin-top: 8px; /* רווח חיצוני כדי להתרחק מהכותרת למעלה */
+    border: 1px solid #ccd6e2; /* קו מסגרת אפור */
+    border-radius: 12px; /* מעגל את הפינות של התיבה */
+    font-size: 16px; /* גודל טקסט קריא להקלדה */
+    
+} 
+
+.password-wrapper {
+    position: relative; /* מאפשר לקבוע את מיקום העין בתוך התיבה */
+    width: 100%;
+}
+
+.password-wrapper input {
+    padding-right: 45px; /* רווח פנימי כדי שהטקסט לא ייכנס תחת העין */
+}
+
+.toggle-password {
+    position: absolute;
+    right: 14px; /* ממקם את העין בצד ימין של השדה */
+    top: 55%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    user-select: none;
+}
+
+label { /* כותרות הטפסים */
+    display: block; /* מוריד את התיבה הלבנה שורה מתחת לכותרת */
+    color: #475569; 
+    font-size: 15px; /* גודל הטקסט לקריאה */
+    font-weight: 700; /* קובע את העובי */
+} 
+
+.login-button {
+    width: 100%; /* מותח את הכפתור לרוחב מלא */
+    padding: 14px; /* נותן לכפתור נפח ואוויר מבפנים */
+    background-color: #0a4ade; /* צבע רקע לכפתור */
+    color: #ffffff; /* צובע את המילים בתוך הכפתור */
+    font-size: 16px; /* גודל טקסט */
+    font-weight: 600; /* עובי טקסט */
+    border: none; /* מוחק את המסגרת של הכפתורים הדיפולט מהדפדפן */
+    border-radius: 12px; /* מעגל את הפינות של הכפתור */
+}
+
+.login-box {
+    background-color: #ffffff; /* נותן רקע לבן לריבוע של הטופס */
+    width: 100%; /* מותח את הריבוע לרוחב מלא */
+    max-width: 480px; /* נועל את הריבוע שלא יתרחב יותר מדי ויהיה ענק */
+    padding: 30px; /* נותן מרווח פנימי גדול כדי שהשדות לא ייגעו בקצה הריבוע */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); /* עושה צל עדין ויפה מסביב לריבוע */
+    border-radius: 12px; /* מעגל את הפינות של הריבוע הלבן הגדול */
+    overflow: hidden; /* מסתיר את מה שיוצא מהקופסה עד האנימציה */
+}
+
+.forms-slider {
+    display: flex;
+    width: 100%;
+    transition: transform 0.6s ease-in-out; /* אנימציית החלקה מהירה וחלקה */
+}
+
+.login-panel,
+.signup-panel {
+    width: 100%; /* כל טופס תופס 100% מלאים של הקופסה */
+    min-width: 100%; /* נועל שלא יציץ שום דבר מהצד! */
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* מחזיר את כל הרווחים שהיו בדיוק אותו דבר */
+}
+
+.signup-panel {
+    display: none; /* טופס ההרשמה מוסתר לחלוטין בהתחלה */
+}
+
+.login-logo {
+    width: 50%; /* רוחב חצי מריבוע ההתחברות */
+    height: 45px; 
+    margin: 0 auto; /* ממרכז את הלוגו באמצע */
+    background-color: #0a4ade; /* רקע כחול */
+    border-radius: 10px; /* פינות מעוגלות */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.login-logo img {
+    height: 100%; /* ממלא את כל ה-45px של המלבן */
+    width: 100%;
+    object-fit: contain; /* שומר על פרופורציות בלי לעוות */
+    transform: scale(1.25); /*  מגדיל רק את התמונה עצמה בתוך המלבן הנעול */
+}
+
+.login-box h2 {
+    text-align: center; /* ממרכז את הכותרת לאמצע */
+    font-size: 40px; /* מגדיל את הכותרת  */
+    font-weight: 800; /* מכהה ומדגיש את האותיות חזק */
+    color: #0f172a; 
+    margin-bottom: 2px; /* רווח ענקי מתחת לכותרת כדי שלא תדבק לשדות */
+}
+
+.form-box {
+    margin-bottom: 35px; /* דוחף את השדות אחד מהשני עם רווח ענקי מלמטה */
+}
+
+#resetForm .form-box {
+    margin-bottom: 15px; /* מקטין את הרווח מתחת לשדה האימייל */
+}
+.login-desc {
+    text-align: center; /* ממרכז את המשפט לאמצע */
+    font-size: 17px;
+    font-weight: 300; /* עובי הטקסט */
+    color: #0a0a0a; /* צבע אפור כחלחל נקי */
+    margin-bottom: 20px; /* רווח למטה כדי שלא יידבק לשדות */
+}
+
+.login-desc a {
+    color: #0a4ade !important; /* מכריח את הקישור להיות כחול */
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.options-box {
+    display: flex; 
+    justify-content: space-between; /* דוחף לקצוות משני הצדדים */
+     align-items: center; /* שם את שני החלקים באותו גובה */
+} 
+
+.forgot-pass {
+    color: #154ac7; 
+    font-size: 15px; /* גודל טקסט של המילים */
+    font-weight: 600; /* עובי הטקסט */
+}
+
+.remember-me {
+    color: #475569; 
+    font-size: 15px; /* גודל טקסט של המילים */
+    font-weight: 500; /* עובי הטקסט */
+    display: flex;
+    align-items: center; /* שם את הריבוע והטקסט באותו גובה */
+    gap: 8px; /* רווח בין הריבוע למילים */
+    white-space: nowrap; /* מונע מהטקסט להישבר לשתי שורות */
+    flex-direction: row-reverse; /* הופך את הסדר ומביא את הריבוע לימין */
+}
+
+.remember-me input[type="checkbox"] {
+    width: 16px; /* מגדיל את הרוחב של הריבוע */
+    height: 18px; /* מגדיל את הגובה של הריבוע */
+    cursor: pointer; /* הופך את העכבר ליד של לחיצה */
+    margin-top: -0px; /* מעלה את הריבוע קצת למעלה כדי שיתיישר בול עם הטקסט */
+}
+
+/* רווחים בתוך דף איפוס סיסמה */
+#resetForm {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* רווח בין שדה האימייל לכפתור השליחה */
+}
+
+.login-box {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* שומר על רווח בין הלוגו הכותרות והטופס */
+}
+
+/* כפתור חזרה להתחברות כתום ומעוגל */
+.back-login-btn {
+    background: transparent; /* רקע שקוף */
+    border: 1.5px solid #0a4ade; /* מסגרת כחולה יפה */
+    color: #0a4ade !important; /* טקסט וחץ כחולים */
+    padding: 10px 20px; /* נפח פנימי נעים */
+    border-radius: 10px; /* פינות מעוגלות */
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none; /* בלי קו תחתון */
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* רווח בין החץ לטקסט */
+    transition: 0.2s ease;
+    margin-top: 15px;
+}
+
+.back-login-btn:hover {
+    background-color: #0a4ade; /* צובע בכחול במעבר עכבר */
+    color: #ffffff !important; /* הופך לטקסט לבן */
+}
+
+@media (max-width: 768px) {
+    /* מאפשר גלילה חלקה למטה שלא ייחתך שום כפתור */
+    .login-cntainer {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+
+    /* מעלים את צד שמאל */
+    .left-side {
+        display: none;
+    }
+
+    /* צד ימין על כל הרוחב */
+    .right-side {
+        width: 100%;
+        flex: 1;
+        padding: 20px;
+        height: auto;
+    }
+
+    /* מרחיק מהתקרה ומרחיק מלמטה */
+    .login-box {
+        margin: 30px auto 40px auto;
+    }
+}
+
+/* מסדר את verify-panel ו-reset-panel בעמודה מסודרת מלמעלה למטה */
+.verify-panel,
+.reset-panel {
+    display: flex;
+    flex-direction: column; /* כותרת, תיאור, ריבועים - כל אחד מתחת לשני */
+    gap: 15px; /* רווח אחיד בין כל אלמנט */
+    width: 100%; /* תופס את כל הרוחב של הקופסה */
+}
+
+.otp-container { /* הקופסה שמחזיקה את שורת הריבועים */
+    display: flex; /* מסדר את הריבועים בשורה אחת */
+    flex-direction: row; /* ריבועים בשורה אחת מימין לשמאל */
+    justify-content: space-between; /* מפזר אותם ברווח שווה */
+    gap: 8px; /* רווח בין ריבוע לריבוע */
+    width: 100%;
+    margin-top: -10px; /* מרים את כל שורת הריבועים מעט למעלה */
+}
+
+.otp-input { 
+    width: 48px; /* רוחב מרובע יפה לכל ספרה */
+    height: 52px; /* גובה מרובע לכל ספרה */
+    text-align: center; /* ממקם את המספר בדיוק באמצע הריבוע */
+    font-size: 22px; /* גודל טקסט גדול וברור לספרה */
+    font-weight: 700; /* עובי מודגש לספרה */
+    border: 1.5px solid #cbd5e1; /* מסגרת אפורה דקה ונקייה */
+    border-radius: 10px; /* מעגל את הפינות של הריבוע */
+    outline: none; /* מעלים את המסגרת השחורה הדיפולטית של הדפדפן */
+}
+
+.otp-input:focus { /* מה קורה כשהעכבר נמצא בתוך הריבוע */
+    border-color: #0a4ade; /* צובע את המסגרת בכחול של האתר */
+    box-shadow: 0 0 0 3px rgba(10, 74, 222, 0.15); /* הילת צל כחולה עדינה מסביב */
+}
+
+.resend-box { /* הקופסה של שורת השליחה החוזרת */
+    text-align: center; /* ממרכז את הטקסט לאמצע */
+    margin-top: 20px; /* רווח יפה מעל השורה */
+}
+
+.resend-link { 
+    color: #f58c2b;
+    text-decoration: none; /* בלי קו תחתון */
+    font-weight: 700; /* טקסט מודגש */
+}
+
+#verifyForm .login-button
+{
+    margin-top: 25px; /* מרווח גדול מלמעלה שדוחף את הכפתור משמעותית למטה */
+}
+
+/* כפתור חזרה לשינוי מייל עם מסגרת */
+.change-email-box {
+    text-align: center; /* ממקם את הכפתור באמצע */
+    margin-top: 15px; /* מרווח מלמעלה */
+}
+
+.change-email-btn {
+    background: transparent; /* רקע שקוף ונקי */
+    border: 1.5px solid #0a4ade; /* מסגרת כחולה יפה */
+    color: #0a4ade; /* צבע טקסט וחץ כחול */
+    padding: 10px 20px; /* נפח פנימי לכפתור */
+    border-radius: 10px; /* פינות מעוגלות */
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer; /* סימן של יד בלחיצה */
+    display: inline-flex;
+    align-items: center;
+    gap: 8px; /* רווח נקי בין החץ לטקסט */
+    transition: 0.2s ease;
+}
+
+.change-email-btn:hover {
+    background-color: #0a4ade; /* צובע את כל הרקע בכחול כשעוברים עליו */
+    color: #ffffff; /* הופך את הטקסט והחץ ללבן */
+}
