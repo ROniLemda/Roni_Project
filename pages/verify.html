@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../pages/style.css">
+  <script src="auth.js"></script>
+  <title>חתימה+ | אימות חשבון</title>
+</head>
+<body>
+
+  <div class="login-cntainer"> 
+    <!-- החצי השמאלי עם תמונת הרקע -->
+    <div class="left-side verify-bg"></div>
+    <!-- החצי הימני עם הטופס -->
+    <div class="right-side">
+      <div class="login-box">
+        
+        <!-- לוגו החברה הכחול -->
+        <div class="login-logo">
+          <img src="../images/logo.png" alt="חתימה+ לוגו">
+        </div>
+
+        <div class="verify-panel">
+          <h2>Verify Account</h2>
+          <p class="login-desc">Enter the 6-digit code sent to your email to complete registration</p>
+
+          <form id="verifyForm" novalidate>
+            <div class="otp-container">
+              <input type="text" maxlength="1" class="otp-input"> <!-- ספרה 1 -->
+              <input type="text" maxlength="1" class="otp-input"> <!-- ספרה 2 -->
+              <input type="text" maxlength="1" class="otp-input"> <!-- ספרה 3 -->
+              <input type="text" maxlength="1" class="otp-input"> <!-- ספרה 4 -->
+              <input type="text" maxlength="1" class="otp-input"> <!-- ספרה 5 -->
+              <input type="text" maxlength="1" class="otp-input"> <!-- ספרה 6 -->
+            </div>
+
+            <span class="error-msg" id="otpCodeError" style="text-align: center; margin-top: 10px; margin-bottom: 4px; font-size: 14.5px; font-weight: 900;"></span>
+
+            <button type="submit" class="login-button">Verify & Activate</button>
+
+            <div class="resend-box">
+              <p class="resend-text">Didn't receive code? <a href="#" class="resend-link">Resend</a></p>
+            </div>
+
+            <div class="change-email-box">
+              <a href="login.html" class="back-login-btn">
+                <i class="fa-solid fa-arrow-left"></i> Back to Login
+              </a>
+            </div>
+          </form>
+        </div>
+
+        <!-- פאנל קביעת סיסמה חדשה (מוסתר בהתחלה) -->
+        <div class="new-password-panel" id="newPasswordPanel" style="display: none;">
+          <h2>Reset Password</h2>
+          <p class="login-desc">Please choose a strong new password for your account</p>
+
+          <form id="newPasswordForm" novalidate>
+            <!-- שדה סיסמה חדשה -->
+            <div class="form-box">
+              <label for="newPassword">הזנת סיסמה חדשה</label>
+              <div class="password-wrapper">
+                <input type="password" id="newPassword" placeholder="••••••••">
+                <i class="fa-solid fa-eye eye-icon" id="newPassEye"></i>
+                <span class="info-icon" id="newPassInfo">?</span>
+              </div>
+              <span class="error-msg" id="newPassError"></span>
+            </div>
+
+            <!-- שדה אימות סיסמה חדשה -->
+            <div class="form-box">
+              <label for="confirmNewPassword">אימות סיסמה חדשה</label>
+              <div class="password-wrapper">
+                <input type="password" id="confirmNewPassword" placeholder="••••••••">
+                <i class="fa-solid fa-eye eye-icon" id="confirmPassEye"></i>
+              </div>
+              <span class="error-msg" id="confirmPassError"></span>
+            </div>
+
+            <button type="submit" class="login-button">Update Password</button>
+          </form>
+        </div>
+          
+      </div> <!-- סגירה של הריבוע הלבן -->
+    </div> <!-- סגירה של צד ימין -->
+  </div> <!-- סגירה של הקונטיינר הראשי -->
+
+<script>
+// קפיצה אוטומטית בין ריבועי הקוד
+const boxes = document.querySelectorAll('.otp-input');
+boxes[0].oninput = function() { boxes[1].focus(); }
+boxes[1].oninput = function() { boxes[2].focus(); }
+boxes[2].oninput = function() { boxes[3].focus(); }
+boxes[3].oninput = function() { boxes[4].focus(); }
+boxes[4].oninput = function() { boxes[5].focus(); }
+
+// בדיקת טופס אימות קוד 6 ספרות
+const verifyForm = document.getElementById('verifyForm');
+const otpInputs = document.querySelectorAll('.otp-input');
+const otpCodeError = document.getElementById('otpCodeError');
+
+verifyForm.onsubmit = async function(e) 
+{
+    e.preventDefault(); // עוצר רענון אוטומטי של הדף
+    otpCodeError.textContent = ''; // מנקה שגיאות קודמות מהמסך
+
+    // מחברים את כל 6 הריבועים לקוד אחד רציף
+    let fullCode = '';
+    for (let i = 0; i < otpInputs.length; i++) 
+    {
+        fullCode += otpInputs[i].value;
+    }
+
+    //  בדיקה שהמשתמש מילא את כל 6 הספרות
+    const codeErr = Auth.checkOtpCode(fullCode);
+    if (codeErr !== '') 
+    {
+        otpCodeError.textContent = codeErr;
+        return;
+    }
+
+    // שליפת האימייל מתוך הכתובת של הדפדפן (URL)
+    const urlParams = new URLSearchParams(window.location.search);
+    const userEmail = urlParams.get('email');
+
+    // אריזת האימייל והקוד לחבילת נתונים
+    const verifyData = 
+    {
+        email: userEmail,
+        code: fullCode
+    };
+
+    // 5. שליחת הקוד לבדיקה מול השרת
+    const response = await fetch(API_URL + '/api/verify-reset-code', 
+    {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(verifyData)
+    });
+
+    // קבלת התשובה מהשרת והצגתה
+    const result = await response.text();
+    alert(result);
+
+    // אם הקוד שגוי או פג תוקף מציגים שגיאה באדום ועוצרים
+    if (result.includes('בהצלחה') === false) 
+    {
+        otpCodeError.textContent = result;
+        return;
+    }
+
+    // הקוד תקין מעלימים את טופס הקוד ומציגים את טופס הסיסמה החדשה
+    document.querySelector('.verify-panel').style.display = 'none';
+    document.getElementById('newPasswordPanel').style.display = 'block';
+};
+
+// הפעלת העין של הסיסמה החדשה
+const newPassInput = document.getElementById('newPassword');
+const newPassEye = document.getElementById('newPassEye');
+newPassEye.onclick = function() 
+{
+    Auth.togglePassword(newPassInput, newPassEye);
+};
+
+// הפעלת העין של אימות הסיסמה
+const confirmPassInput = document.getElementById('confirmNewPassword');
+const confirmPassEye = document.getElementById('confirmPassEye');
+confirmPassEye.onclick = function() 
+{
+    Auth.togglePassword(confirmPassInput, confirmPassEye);
+};
+
+// סימן שאלה של חוקי הסיסמה
+document.getElementById('newPassInfo').onclick = function()
+{
+      alert('דרישות לסיסמה:\n• לפחות 6 תווים\n• אות גדולה באנגלית (A-Z)\n• תו מיוחד (!@#$)');
+};
+
+// בדיקת טופס עדכון הסיסמה
+const newPasswordForm = document.getElementById('newPasswordForm'); // השדה סיסמא חדשה
+newPasswordForm.onsubmit = async function(e) 
+{
+    e.preventDefault(); // מונע ריפרש אוטומטי
+
+    // ניקוי שגיאות ישנות
+    const newPassError = document.getElementById('newPassError'); // הטופס שגיאה מתחת לשדה
+    const confirmPassError = document.getElementById('confirmPassError'); // הטופס שגיאה מתחת לשדה
+    newPassError.textContent = '';
+    confirmPassError.textContent = '';
+    newPassInput.classList.remove('input-error');
+    confirmPassInput.classList.remove('input-error');
+
+    let hasError = false;
+
+    // בדיקת תקינות הסיסמה החדשה מול חוקי האבטחה
+    const passRuleErr = Auth.checkPassword(newPassInput.value);
+    if (passRuleErr !== '') 
+    {
+        newPassError.textContent = 'הסיסמה אינה עומדת בדרישות האבטחה, אנא בחר סיסמה חזקה יותר.';
+        newPassInput.classList.add('input-error');
+        hasError = true;
+    }
+
+    // בדיקת התאמה בין שתי הסיסמאות
+    if (newPassInput.value !== confirmPassInput.value) 
+    {
+        confirmPassError.textContent = 'הסיסמאות שהוזנו אינן תואמות, אנא בדוק שנית.';
+        confirmPassInput.classList.add('input-error');
+        hasError = true;
+    }
+
+    if (hasError === true) 
+    {
+        return; // יוצא כאשר יש שגיאה כל שהיא
+    }
+
+      // שליפת האימייל מה URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const userEmail = urlParams.get('email');
+
+    // אריזת הנתונים
+      const updateData = 
+      {
+          email: userEmail,
+          newPassword: newPassInput.value
+      };
+
+    // שליחה לשרת לנתיב /api/update-password
+    const response = await fetch(API_URL + '/api/update-password',
+    {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+    });
+
+    // קבלת התשובה והעברה לדף ההתחברות
+    const result = await response.text();
+    alert(result);
+
+    if (result.includes('בהצלחה')) 
+    {
+        window.location.href = 'login.html';
+    }
+};
+
+</script>
+
+</body>
+</html>

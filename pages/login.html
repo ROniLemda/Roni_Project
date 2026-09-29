@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> <!-- אייקונים-->
     <link rel="stylesheet" href="../pages/style.css">  <!-- מחבר עיצוב -->
+    <script src="auth.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script> 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>דף התחברות מערכת חתימה+ | חתימה דיגיטלית מאובטחת</title>
   </head>
 
@@ -14,24 +17,27 @@
       <div class="left-side"></div> <!-- החצי השמאלי של המסך -->
       <div class="right-side"> <!-- פותח את חצי המסך הימני של הקופסא -->
         <div class="login-box"> <!-- קופסה לטופס ההתחברות שנמצא בצד הלבן -->
-          <div class="forms-slider"> <!-- הקטע שתזוז ימינה ושמאלה באנימציה -->
-            <div class="login-panel"> <!-- התחלה של טופס ההתחברות -->
+          <div class="login-panel"> <!-- התחלה של טופס ההתחברות -->
         <div class="login-logo"> <!--  הלוגו מעל כותרת ההתחברות -->
           <img src="../images/logo.png" alt="חתימה+ לוגו">
         </div>
          <h2>Login Account</h2> 
         <p class="login-desc">Don't have an account? <a href="#" id="toSignupBtn">Sign up</a></p>   
-              <form id="loginForm"> 
+              <form id="loginForm" novalidate> 
             <div class="form-box"> <!-- השדה של האימייל -->
-              <label for="email">Email Address</label> 
-              <input type="email" id="email" required placeholder="name@company.com"> 
-           </div>
-           <div class="form-box"> <!-- פתיחת שדה לסיסמא -->
-             <label for="password">Password</label> <!-- הכותרת הקטנה שמופיעה מעל תיבת הסיסמה -->
-             <div class="password-wrapper">
-               <input type="password" id="password" required placeholder="••••••••"> 
-             </div>
-          </div>
+              <label for="loginEmail">Email Address or Username</label>
+              <input type="text" id="loginEmail" placeholder="name@company.com">
+              <span class="error-msg" id="loginEmailError"></span>
+            </div>
+            <div class="form-box"> <!-- שדה הסיסמא -->
+              <label for="loginPassword">Password</label>
+              <div class="password-wrapper">
+                <input type="password" id="loginPassword" placeholder="••••••••">
+                <i class="fa-solid fa-eye eye-icon" id="loginEye"></i>
+                <span class="info-icon" id="loginInfo">?</span>
+              </div>
+              <span class="error-msg" id="loginPassError"></span>
+            </div>
 
           <button type="submit" class="login-button">Login to Account</button> <!-- כפתור ההתחברות -->
         </form>
@@ -51,7 +57,7 @@
     </div>
 
     <!-- שלושת כפתורי ההתחברות המהירה -->
-    <button class="social-btn google-btn">
+    <button type="button" class="social-btn google-btn" id="googleLoginBtn">
         <img src="../images/google.png" alt="Google"> Continue with Google
     </button>
     
@@ -59,7 +65,7 @@
         <img src="../images/facebook.png" alt="Facebook"> Continue with Facebook
     </button>
     
-    <button class="social-btn microsoft-btn">
+    <button type="button" class="social-btn microsoft-btn" id="microsoftLoginBtn">
         <img src="../images/microsoft.png" alt="Microsoft"> Continue with Microsoft
     </button>
 </div> <!-- סוף טופס ההתחברות -->
@@ -67,32 +73,41 @@
 <div class="signup-panel"> <!-- התחלה של טופס ההרשמה -->
   <h2>Create Account</h2>
 <p class="login-desc">Already have an account? <a href="#" id="toLoginBtn">Log in</a></p>
-<form id="signupForm">
+<form id="signupForm" novalidate>
   <div class="form-box">
     <label for="signupName">Full Name</label>
-    <input type="text" id="signupName" required placeholder="Israel Israeli">
+    <input type="text" id="signupName" placeholder="Israel Israeli">
+    <span class="error-msg" id="signupNameError"></span>
   </div>
 
   <div class="form-box">
     <label for="signupUsername">Username</label>
-    <input type="text" id="signupUsername" required placeholder="israel123">
+    <input type="text" id="signupUsername" placeholder="israel123">
+    <span class="error-msg" id="signupUserError"></span>
   </div>
 
   <div class="form-box">
     <label for="signupEmail">Email Address</label>
-    <input type="email" id="signupEmail" required placeholder="name@company.com">
+    <input type="email" id="signupEmail" placeholder="name@company.com">
+    <span class="error-msg" id="signupEmailError"></span>
   </div>
 
   <div class="form-box">
     <label for="signupPassword">Password</label>
-    <input type="password" id="signupPassword" required placeholder="••••••••">
+    <div class="password-wrapper">
+      <input type="password" id="signupPassword" placeholder="••••••••">
+      <i class="fa-solid fa-eye eye-icon" id="signupEye"></i>
+      <span class="info-icon" id="signupInfo">?</span>
+    </div>
+    <span class="error-msg" id="signupPassError"></span>
   </div>
 
-<div class="form-box" style="margin: 20px; margin-top: -20px;">
+<div class="form-box" style="margin: 15px 0 10px 0;">
   <label class="remember-me">
-    <input type="checkbox" required>
+    <input type="checkbox" id="signupTerms">
     אני מאשר/ת את <a href="#" class="forgot-pass">תנאי השימוש ומדיניות הפרטיות</a>
   </label>
+  <span class="error-msg" id="signupTermsError"></span>
 </div>
 
   <button type="submit" class="login-button">Create Account</button>
@@ -104,7 +119,7 @@
     </div>
 
     <!-- כפתור הרשמה עם גוגל -->
-    <button class="social-btn google-btn">
+    <button type="button" class="social-btn google-btn" id="googleSignupBtn">
         <img src="../images/google.png" alt="Google"> Sign up with Google
     </button>
         <button class="social-btn facebook-btn">
@@ -116,16 +131,13 @@
     </button>
 </div>
 </form>
-</div> <!-- סגירה של forms-slider -->
 </div> <!-- סגירה של login-box -->
-</div>
-    </div> <!-- סגירה של צד ימין -->
+</div> <!-- סגירה של צד ימין -->
 
 <script>
 
 // מעבר מהתחברות לדף ההרשמה 
 const toSignupBtn = document.getElementById('toSignupBtn'); //  הכפתור של ההרשמה לפי האיידי שלו
-const formsSlider = document.querySelector('.forms-slider'); //  מוצא את כל החלק של הריבוע שצריך לזוז הצידה
 const loginPanel = document.querySelector('.login-panel'); /* מוצא את הריבוע שמחזיק את כל שדות ההתחברות ביחד */
 const signupPanel = document.querySelector('.signup-panel'); /* מוצא את הריבוע שמחזיק את כל שדות ההרשמה ביחד */
 
@@ -144,23 +156,275 @@ toLoginBtn.onclick = function() // מחזיר את ההתחברות ומעלים
 };
 // סיום קטע המעבר מהתחברות להרשמה
 
+
+// הדפסה למסך הודעת שגיאה בהתחברות
+const loginEmail = document.getElementById('loginEmail'); // שדה האימייל
+const loginPassword = document.getElementById('loginPassword'); // שדה הסיסמה
+const loginEmailError = document.getElementById('loginEmailError'); // המקום של הודעת השגיאה באימייל
+const loginPassError = document.getElementById('loginPassError');  // המקום של הודעת השגיאה בסיסמא
 const loginForm = document.getElementById('loginForm'); // טופס ופרטי ההתחברות
-const signupForm = document.getElementById('signupForm'); //  טופס ההרשמה ופרטי התחברות
-signupForm.onsubmit = function(e) 
+loginForm.onsubmit = async function(e) 
 {
-    e.preventDefault(); // עוצר את הרענון האוטומטי של הדף
-    const name = document.getElementById('signupName').value; // שומר את השם המלא שהמשתמש הקליד
-    const username = document.getElementById('signupUsername').value; // שומר את שם המשתמש שהוקלד
-    const email = document.getElementById('signupEmail').value; // שומר את האימייל שהוקלד
-    const password = document.getElementById('signupPassword').value; // שומר את הסיסמה שהוקלדה
+   e.preventDefault(); // עוצר את הרענון האוטומטי של הדף בלחיצה
+   
+   // 1. מנקה הודעות שגיאה ומוריד את הצבע האדום מהשדות
+   loginEmailError.textContent = '';
+   loginPassError.textContent = '';
+   loginEmail.classList.remove('input-error');
+   loginPassword.classList.remove('input-error');
+
+    let hasError = false; // דגל שגיאה
+
+    // 2. בדיקת אימייל או שם משתמש
+    const emailError = Auth.checkLoginUser(loginEmail.value);
+    if (emailError !== '') 
+    {
+        loginEmailError.textContent = emailError;
+        loginEmail.classList.add('input-error'); // צובע את שדה האימייל באדום
+        hasError = true;
+    }
+
+    // 3. בדיקת סיסמה
+    const passError = Auth.checkPassword(loginPassword.value);
+    if (passError !== '') 
+    {
+        loginPassError.textContent = passError;
+        loginPassword.classList.add('input-error'); // צובע את שדה הסיסמה באדום
+        hasError = true;
+    }
+
+    // אם יש שגיאה עוצר ולא שולח
+    if (hasError === true)
+    {
+        return;
+    }
+
+    // אריזת פרטי ההתחברות לחבילה
+    const loginData = 
+    {
+    email: loginEmail.value,
+    password: loginPassword.value
+   };
+
+   // שליחה לשרת לנתיב /api/login
+   const response = await fetch(API_URL + '/api/login',
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(loginData)
+  });
+
+  // קבלת התשובה מהשרת והצגתה
+  const result = await response.text();
+  alert(result);
+}
+// סיום הדפסה למסך הודעת שגיאה בהתחברות
+
+// הדפסה למסך הודעת שגיאה בעת הרשמה
+const signupForm = document.getElementById('signupForm'); //  טופס ההרשמה ופרטי התחברות
+signupForm.onsubmit = async function(e) 
+{
+    e.preventDefault(); // עוצר רענון אוטומטי של הדף
+
+    // מנקה את כל השגיאות הישנות
+    document.getElementById('signupNameError').textContent = '';
+    document.getElementById('signupUserError').textContent = '';
+    document.getElementById('signupEmailError').textContent = '';
+    document.getElementById('signupPassError').textContent = '';
+    document.getElementById('signupTermsError').textContent = '';
+
+    const nameInput = document.getElementById('signupName');
+    const userInput = document.getElementById('signupUsername');
+    const emailInput = document.getElementById('signupEmail');
+    const passInput = document.getElementById('signupPassword');
+    const terms = document.getElementById('signupTerms').checked; // בודק אם ה-checkbox מסומן (true/false)
+
+    nameInput.classList.remove('input-error');
+    userInput.classList.remove('input-error');
+    emailInput.classList.remove('input-error');
+    passInput.classList.remove('input-error');
+
+    let hasError = false; // דגל שבודק אם יש שגיאה באחד השדות
+
+    //  שם מלא
+    const nameErr = Auth.checkFullName(nameInput.value);
+    if (nameErr !== '') 
+    {
+        document.getElementById('signupNameError').textContent = nameErr;
+        nameInput.classList.add('input-error');
+        hasError = true;
+    }
+
+    //  שם משתמש
+    const userErr = Auth.checkUsername(userInput.value);
+    if (userErr !== '')
+    {
+        document.getElementById('signupUserError').textContent = userErr;
+        userInput.classList.add('input-error');
+        hasError = true;
+    }
+
+    // אימייל
+    const emailErr = Auth.checkEmail(emailInput.value);
+    if (emailErr !== '') 
+    {
+        document.getElementById('signupEmailError').textContent = emailErr;
+        emailInput.classList.add('input-error');
+        hasError = true;
+    }
+
+    // סיסמה
+    const passErr = Auth.checkPassword(passInput.value);
+    if (passErr !== '')
+    {
+        document.getElementById('signupPassError').textContent = passErr;
+        passInput.classList.add('input-error');
+        hasError = true;
+    }
+
+    // אישור תנאי השימוש
+    if (terms === false)
+    {
+        document.getElementById('signupTermsError').textContent = 'יש לאשר את תנאי השימוש כדי להירשם.';
+        hasError = true;
+    }
+
+    // אם יש לפחות שגיאה אחת עוצר ולא ממשיך
+    if (hasError === true)
+    {
+        return;
+    }
+
+    // פותח קופסה דיגיטלית ריקה (DTO)
     const userData =
      {
-      fullName: name,
-      username: username,
-      email: email,
-      password: password
+      fullName: nameInput.value, // שולף את הטקסט מתיבת השם הפרטי
+      username: userInput.value, // שולף את הטקסט מתיבת השם משתמש
+      email: emailInput.value,  // שולף את הטקסט מתיבת האימייל
+      password: passInput.value // שולף את הטקסט מתיבת השם הסיסמא
     };
+
+    // שולח את החבילה לשרת
+    const response = await fetch(API_URL + '/api/register',
+    {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+    });
+
+    // מקבל את התשובה מהשרת
+    const result = await response.text();
+    alert(result);
+
+    // מעבירים לדף האימות
+  window.location.href = 'verify.html?type=register&email=' + emailInput.value;};
+// סיום הדפסה למסך הודעת שגיאה בעת הרשמה
+
+  // העין שמראה את הסיסמא
+const loginEye = document.getElementById('loginEye');
+loginEye.onclick = function() 
+{
+   Auth.togglePassword(loginPassword, loginEye);
+};
+
+// העין שמראה את הסיסמא בהרשמה
+const signupEye = document.getElementById('signupEye');
+const signupPassInput = document.getElementById('signupPassword');
+signupEye.onclick = function() 
+{
+   Auth.togglePassword(signupPassInput, signupEye);
+};
+
+document.getElementById('loginInfo').onclick = showPasswordRules; // הכפתור מדריך בהתחברות
+document.getElementById('signupInfo').onclick = showPasswordRules; // הכפתור מדריך בהרשמה
+function showPasswordRules()  // מדריך הוראות
+{
+    Swal.fire({
+        icon: 'info',
+        iconColor: '#0052cc',
+        title: 'דרישות לבחירת סיסמה תקנית ומאובטחת',
+        html: `
+            <div style="text-align: right; direction: rtl; line-height: 1.8; font-size: 15px; color: #334155;">
+                <p style="margin-bottom: 12px;">דרישות אלו נועדו להגן על החשבון שלך מפני פריצות וניסיונות גישה לא מורשים, סיסמה מורכבת מבטיחה שהמידע שלך יישאר מאובטח</p>
+                <ul style="padding-right: 20px; margin: 0;">
+                    <li>הסיסמה חייבת להכיל 6 תווים ומעלה</li>
+                    <li>חובה לבצע שילוב של אות גדולה אחת לפחות באנגלית (A-Z)</li>
+                    <li>דרישת חובה לסימן מיוחד אחד לפחות (! או @ או # או $)</li>                </ul>
+            </div>
+        `,
+        confirmButtonText: 'לתפריט ההתחברות',
+        confirmButtonColor: '#0052cc'
+    });
 }
+
+// פונקציה שמקבלת את התשובה מגוגל אחרי שהמשתמש אישר
+async function loginWithGoogle(token) 
+{
+    // שולחים את הטוקן לשרת שלנו כדי שירשום/יחבר את המשתמש
+    const res = await fetch(API_URL + '/api/google-login', 
+    {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token })
+    });
+
+    const result = await res.text();
+    alert(result);
+
+    if (result.includes('בהצלחה')) 
+    {
+        // התחבר בהצלחה מעבירים לסביבת העבודה
+        window.location.href = 'login.html';
+    }
+}
+
+
+// בדיקה האם גוגל החזירה לנו טוקן 
+window.onload = function() 
+{
+    // בודק אם חזרנו מגוגל עם טוקן
+    if (window.location.hash.includes('id_token=')) 
+    {
+        // לוקח את כל הטקסט שאחרי "id_token="
+        const parts = window.location.hash.split('id_token=');
+        const token = parts[1].split('&')[0];
+
+        // שולח להתחברות
+        loginWithGoogle(token);
+    }
+};
+
+function openGoogle()
+{
+    const myPage = window.location.origin + window.location.pathname;
+    const randomNonce = Math.random().toString(36).substring(2);
+
+    const googleUrl = 
+        'https://accounts.google.com/o/oauth2/v2/auth' +
+        '?client_id=541544347287-kike3l6ru9nuroq4thre6tuvreffa8s2.apps.googleusercontent.com' +
+        '&redirect_uri=' + myPage +
+        '&response_type=id_token' +
+        '&scope=email profile' +
+        '&nonce=' + randomNonce;
+
+    window.location.href = googleUrl; // מעביר לקישור
+}
+
+// לחיצה על כפתור גוגל פותחת את חלון ההתחברות של גוגל
+document.getElementById('googleLoginBtn').onclick = function(e) 
+{
+    e.preventDefault();
+    openGoogle(); // פעולה שמעבירה לחלון
+
+};
+
+// אותו דבר על חלון ההתחברות רק כפתור ההרשמה
+document.getElementById('googleSignupBtn').onclick = function(e) 
+{
+    e.preventDefault();
+    openGoogle(); // פעולה שמעבירה לחלון
+};
+
 </script>
 
 </body> 

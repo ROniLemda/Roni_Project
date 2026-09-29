@@ -12,7 +12,7 @@
     width: 100vw; /* 100% רוחב המסך */
     overflow: hidden;
 }
-
+    
 .left-side {
     width: 50%; /* החצי השמאלי של המסך */
     flex: 0 0 50%;
@@ -143,12 +143,6 @@ label { /* כותרות הטפסים */
     overflow: hidden; /* מסתיר את מה שיוצא מהקופסה עד האנימציה */
 }
 
-.forms-slider {
-    display: flex;
-    width: 100%;
-    transition: transform 0.6s ease-in-out; /* אנימציית החלקה מהירה וחלקה */
-}
-
 .login-panel,
 .signup-panel {
     width: 100%; /* כל טופס תופס 100% מלאים של הקופסה */
@@ -190,7 +184,7 @@ label { /* כותרות הטפסים */
 }
 
 .form-box {
-    margin-bottom: 35px; /* דוחף את השדות אחד מהשני עם רווח ענקי מלמטה */
+    margin-bottom: 14px; /* מחזיר את הרווח היפה והטבעי בין השדות */
 }
 
 #resetForm .form-box {
@@ -333,7 +327,6 @@ label { /* כותרות הטפסים */
 
 .otp-input:focus { /* מה קורה כשהעכבר נמצא בתוך הריבוע */
     border-color: #0a4ade; /* צובע את המסגרת בכחול של האתר */
-    box-shadow: 0 0 0 3px rgba(10, 74, 222, 0.15); /* הילת צל כחולה עדינה מסביב */
 }
 
 .resend-box { /* הקופסה של שורת השליחה החוזרת */
@@ -377,3 +370,58 @@ label { /* כותרות הטפסים */
     background-color: #0a4ade; /* צובע את כל הרקע בכחול כשעוברים עליו */
     color: #ffffff; /* הופך את הטקסט והחץ ללבן */
 }
+
+/* עיצוב להודעות שגיאה מתחת לשדות בעברית */
+.error-msg {
+    color: #dc2626; /* צבע אדום חי ובולט */
+    font-size: 13px; /* גודל קריא וברור */
+    font-weight: 700; /* הכי עבה ומודגש שיש */
+    direction: rtl; /* כיוון כתיבה מימין לשמאל לעברית! */
+    text-align: right; /* צמוד לימין של השדה */
+    margin-top: 3px; /* צמוד ישר מתחת לתיבה כדי לא להגדיל את הרווח הכללי */
+    display: block;
+}
+
+/* שדה שיש בו שגיאה רק מסגרת אדומה, רקע לבן */
+.input-error {
+    border-color: #dc2626 !important; /* רק המסגרת נצבעת באדום */
+    background-color: #ffffff !important; /* הרקע נשאר לבן נקי! */
+    outline: none !important;
+}
+
+.verify-bg {
+    background-image: url('../images/verify.png') !important;
+}
+
+
+.eye-icon {
+    position: absolute; /* מסמל לו שהוא הולך להיות בתוך הקופסא */
+    right: 14px; /* מרחק של 14 פיקסלים מקצה ימין */
+    top: 50%;
+    transform: translateY(-38%); /* ממקם אותה בול באמצע הגובה של התיבה */
+    color: #94a3b8; /* צבע אפור אלגנטי ועדין */
+    cursor: pointer; /* סמן של יד כששמים את העכבר */
+    font-size: 16px;
+    transition: 0.2s ease;
+}
+
+/* עיגול סימן שאלה ליד העין */
+.info-icon {
+    position: absolute; /* מסמל לו שהוא הולך להיות בתוך הקופסא */
+    right: 42px; /* מרחק של 42 פיקסלים מימין (יושב משמאל לעין) */
+    top: 50%;
+    transform: translateY(-38%); /* ממורכז בול לגובה התיבה */
+    width: 18px;
+    height: 18px;
+    border-radius: 50%; /* הופך לעיגול מושלם */
+    background-color: #e2e8f0; /* רקע אפור בהיר ועדין */
+    color: #475569; /* צבע הסימן שאלה */
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+
