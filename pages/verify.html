@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="../pages/style.css">
   <script src="auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <title>חתימה+ | אימות חשבון</title>
 </head>
 <body>
@@ -142,19 +144,45 @@ verifyForm.onsubmit = async function(e)
 
     // קבלת התשובה מהשרת והצגתה
     const result = await response.text();
-    alert(result);
 
     // אם הקוד שגוי או פג תוקף מציגים שגיאה באדום ועוצרים
     if (result.includes('בהצלחה') === false) 
     {
+      Swal.fire({
+      icon: 'error',
+      text: result,
+      confirmButtonText: 'סגירה',
+      confirmButtonColor: '#0052cc'
+      });
         otpCodeError.textContent = result;
         return;
     }
 
-    // הקוד תקין מעלימים את טופס הקוד ומציגים את טופס הסיסמה החדשה
-    document.querySelector('.verify-panel').style.display = 'none';
-    document.getElementById('newPasswordPanel').style.display = 'block';
-};
+    const verifyType = urlParams.get('type');
+    if (verifyType === 'register')
+    {
+        // אם זה משתמש חדש שנרשם מעבירים אותו ישר להתחבר
+        await Swal.fire({
+            icon: 'success',
+            text: 'תהליך האימות הושלם בהצלחה, חשבונך הופעל, הנך מועבר כעת להתחברות למערכת.',
+            confirmButtonText: 'מעבר להתחברות',
+            confirmButtonColor: '#0052cc'
+        });
+        window.location.href = 'login.html';
+    }
+    else
+    {
+        // אם זה איפוס סיסמה מציגים את טופס קביעת הסיסמה החדשה 
+        await Swal.fire({
+            icon: 'success',
+            text: result, // "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה."
+            confirmButtonText: 'המשך',
+            confirmButtonColor: '#0052cc'
+        });
+        document.querySelector('.verify-panel').style.display = 'none';
+        document.getElementById('newPasswordPanel').style.display = 'block';
+    }
+}
 
 // הפעלת העין של הסיסמה החדשה
 const newPassInput = document.getElementById('newPassword');
@@ -175,7 +203,23 @@ confirmPassEye.onclick = function()
 // סימן שאלה של חוקי הסיסמה
 document.getElementById('newPassInfo').onclick = function()
 {
-      alert('דרישות לסיסמה:\n• לפחות 6 תווים\n• אות גדולה באנגלית (A-Z)\n• תו מיוחד (!@#$)');
+    Swal.fire({
+        icon: 'info',
+        iconColor: '#0052cc',
+        title: 'דרישות לבחירת סיסמה תקנית ומאובטחת',
+        html: `
+            <div style="text-align: right; direction: rtl; line-height: 1.8; font-size: 15px; color: #334155;">
+                <p style="margin-bottom: 12px;">דרישות אלו נועדו להגן על החשבון שלך מפני פריצות וניסיונות גישה לא מורשים, סיסמה מורכבת מבטיחה שהמידע שלך יישאר מאובטח</p>
+                <ul style="padding-right: 20px; margin: 0;">
+                    <li>הסיסמה חייבת להכיל 6 תווים ומעלה</li>
+                    <li>חובה לבצע שילוב של אות גדולה אחת לפחות באנגלית (A-Z)</li>
+                    <li>דרישת חובה לסימן מיוחד אחד לפחות (! או @ או # או $)</li>
+                </ul>
+            </div>
+        `,
+        confirmButtonText: 'הבנתי',
+        confirmButtonColor: '#0052cc'
+    });
 };
 
 // בדיקת טופס עדכון הסיסמה
@@ -237,11 +281,25 @@ newPasswordForm.onsubmit = async function(e)
 
     // קבלת התשובה והעברה לדף ההתחברות
     const result = await response.text();
-    alert(result);
-
+    
     if (result.includes('בהצלחה')) 
     {
+     await Swal.fire({
+      icon: 'success',
+      text: result,
+      confirmButtonText: 'מעבר להתחברות',
+      confirmButtonColor: '#0052cc'
+     });
         window.location.href = 'login.html';
+    }
+    else
+    {
+       Swal.fire({
+       icon: 'error',
+       text: result,
+       confirmButtonText: 'סגירה',
+       confirmButtonColor: '#0052cc'
+      });
     }
 };
 

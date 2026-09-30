@@ -55,23 +55,45 @@ string RegisterUser(UserRegister data)
     // שולח את הסיסמה הרגילה של המשתמש לפעולת ההצפנה ושומר את הסיסמא המאובטחת
     string hashPass = HashPassword(data.Password);
 
+    string verifyCode = Random.Shared.Next(100000, 1000000).ToString();
+    string hashedCode = HashPassword(verifyCode);
+    DateTime expireTime = DateTime.UtcNow.AddMinutes(10);
+    
     // פתיחת חיבור למסד הנתונים
     using var connection = new NpgsqlConnection(databaseAddress); 
     connection.Open();
 
-    // משפט ה-SQL להכנסת המשתמש לטבלה
-    string sql = "INSERT INTO users (full_name, username, email, password_hash) VALUES (@name, @user, @email, @pass)";
+    // בדיקה האם שם המשתמש או האימייל כבר קיימים במערכת
+    string checkSql = "SELECT id FROM users WHERE email = @email OR username = @user";
+        using var checkCmd = new NpgsqlCommand(checkSql, connection);
+        checkCmd.Parameters.AddWithValue("@email", data.Email);
+        checkCmd.Parameters.AddWithValue("@user", data.Username);
+
+        using var checkReader = checkCmd.ExecuteReader();
+        if (checkReader.Read() == true)
+        {
+            return "שם המשתמש או כתובת האימייל שהוזנו כבר קיימים במערכת, אנא בחר פרטים אחרים.";
+        }
+        checkReader.Close(); // סוגרים את הקורא כדי שנוכל להמשיך להרשמה
+
+
+    // משפט ה-SQL להכנסת המשתמש והקוד אימות לטבלה
+    string sql = "INSERT INTO users (full_name, username, email, password_hash, reset_code_hash, reset_code_expires) " +
+    "VALUES (@name, @user, @email, @pass, @code, @expires)";
     // לוקח את הכינויים הזמניים (עם ה@) וממלא אותם בנתונים האמיתיים מהאתר
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@name", data.FullName);
     command.Parameters.AddWithValue("@user", data.Username);
     command.Parameters.AddWithValue("@email", data.Email);
     command.Parameters.AddWithValue("@pass", hashPass);
+    command.Parameters.AddWithValue("@code", hashedCode);
+    command.Parameters.AddWithValue("@expires", expireTime);
 
     // הפעלת הפקודה במסד הנתונים
     command.ExecuteNonQuery();
 
-    return "נרשמת בהצלחה! לחץ כאן על מנת לעבור לדף ההתחברות";
+    Console.WriteLine("קוד האימות עבור " + data.Email + " הוא: " + verifyCode);
+    return "נרשמת בהצלחה, קוד אימות בן 6 ספרות נשלח לכתובת האימייל שלך לצורך הפעלת החשבון.";
 }
 
 string LoginUser(UserLogin data)
@@ -103,7 +125,7 @@ string LoginUser(UserLogin data)
     // האם הסיסמה שהוקלדה עכשיו מתאימה למה ששמור
     if (hashPass == savedPassword)
     {
-        return "ההתחברות בוצעה בהצלחה,מיד תועבר לסביבת העבודה שלך.";
+        return "ההתחברות בוצעה בהצלחה, מיד תועבר לסביבת העבודה שלך.";
     }
     else
     {
@@ -172,6 +194,11 @@ string VerifyResetCode(VerifyCodeRequest data)
         return "לא נמצא חשבון המקושר לכתובת אימייל זו. אנא בדוק את הפרטים.";
     }
 
+    // בדיקה האם קוד האימות ריק בטבלה
+    if (reader.IsDBNull(0) || reader.IsDBNull(1))
+    {
+        return "לא נמצא קוד אימות בתוקף עבור משתמש זה, יש לבקש קוד חדש.";
+    }
     // שולפים את הנתונים מהעמודות
     string savedHashedCode = reader.GetString(0);
     DateTime expireTime = reader.GetDateTime(1);
@@ -188,6 +215,13 @@ string VerifyResetCode(VerifyCodeRequest data)
      return "קוד האימות שהוזן אינו תואם, אנא בדוק את הפרטים ונסה שנית.";    
     }
 
+    reader.Close();
+    // מחיקת קוד האימות מהטבלה שלא ישתמשו בו שוב
+    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL WHERE email = @email";
+    using var clearCmd = new NpgsqlCommand(clearCodeSql, connection);
+    clearCmd.Parameters.AddWithValue("@email", data.Email);
+    clearCmd.ExecuteNonQuery();
+        
     return "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה.";
 }
 
@@ -250,7 +284,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data)
     if (reader.Read() == true)
     {
         // המשתמש קיים מחברים אותו ישר!
-       return "ההתחברות באמצעות Google בוצעה בהצלחה, מיד תועבר לסביבת העבודה שלך.";
+       return "ההתחברות באמצעות Google בוצעה בהצלחה, לחץ המשך על מנת לעבור לסביבת העבודה שלך.";
     }
     reader.Close();
 

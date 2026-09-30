@@ -5,6 +5,7 @@
     <!-- מתאים את האתר אוטומטית למסך של הטלפון הנייד -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> <!-- אייקונים-->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap"> 
     <link rel="stylesheet" href="../pages/style.css">  <!-- מחבר עיצוב -->
     <script src="auth.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script> 
@@ -216,7 +217,24 @@ loginForm.onsubmit = async function(e)
 
   // קבלת התשובה מהשרת והצגתה
   const result = await response.text();
-  alert(result);
+  if (result.includes('בהצלחה'))
+  {
+      Swal.fire({
+          icon: 'success',
+          text: result,
+          confirmButtonText: 'המשך',
+          confirmButtonColor: '#0052cc'
+      });
+  }
+  else
+  {
+      Swal.fire({
+          icon: 'error',
+          text: result,
+          confirmButtonText: 'סגירה',
+          confirmButtonColor: '#0052cc'
+      });
+  }
 }
 // סיום הדפסה למסך הודעת שגיאה בהתחברות
 
@@ -314,10 +332,28 @@ signupForm.onsubmit = async function(e)
 
     // מקבל את התשובה מהשרת
     const result = await response.text();
-    alert(result);
+    if (result.includes('בהצלחה') || result.includes('קוד אימות'))
+    {
+        await Swal.fire({ 
+            icon: 'success',
+            text: result,
+            confirmButtonText: 'מעבר לתהליך האימות',
+            confirmButtonColor: '#0052cc'
+        });
 
-    // מעבירים לדף האימות
-  window.location.href = 'verify.html?type=register&email=' + emailInput.value;};
+        // רק אחרי שהמשתמש לחץ על הכפתור בחלון, עוברים לדף האימות
+        window.location.href = 'verify.html?type=register&email=' + emailInput.value;
+    }
+    else
+    {
+        Swal.fire({
+            icon: 'error',
+            text: result,
+            confirmButtonText: 'סגירה',
+            confirmButtonColor: '#0052cc'
+        });
+    }
+};
 // סיום הדפסה למסך הודעת שגיאה בעת הרשמה
 
   // העין שמראה את הסיסמא
@@ -368,13 +404,29 @@ async function loginWithGoogle(token)
         body: JSON.stringify({ token: token })
     });
 
-    const result = await res.text();
-    alert(result);
+    const result = await res.text(); // ממיר לטקסט מה שחזר מהשרת
 
     if (result.includes('בהצלחה')) 
     {
+        await Swal.fire({
+            icon: 'success',
+            iconColor: '#5AD64E',
+            text: result,
+            confirmButtonText: 'המשך',
+            confirmButtonColor: '#0052cc'
+        });
+
         // התחבר בהצלחה מעבירים לסביבת העבודה
         window.location.href = 'login.html';
+    }
+    else
+    {
+        Swal.fire({
+            icon: 'error',
+            text: result,
+            confirmButtonText: 'סגירה',
+            confirmButtonColor: '#0052cc'
+        });
     }
 }
 
@@ -388,6 +440,9 @@ window.onload = function()
         // לוקח את כל הטקסט שאחרי "id_token="
         const parts = window.location.hash.split('id_token=');
         const token = parts[1].split('&')[0];
+
+       // מנקה את הטוקן מסרגל הכתובות של הדפדפן
+        window.history.replaceState(null, '', window.location.pathname);
 
         // שולח להתחברות
         loginWithGoogle(token);

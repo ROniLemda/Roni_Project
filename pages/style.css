@@ -250,8 +250,8 @@ label { /* כותרות הטפסים */
 /* כפתור חזרה להתחברות כתום ומעוגל */
 .back-login-btn {
     background: transparent; /* רקע שקוף */
-    border: 1.5px solid #0a4ade; /* מסגרת כחולה יפה */
-    color: #0a4ade !important; /* טקסט וחץ כחולים */
+    border: 1.5px solid #034CC5; /* מסגרת כחולה יפה */
+    color: #034CC5 !important; /* טקסט וחץ כחולים */
     padding: 10px 20px; /* נפח פנימי נעים */
     border-radius: 10px; /* פינות מעוגלות */
     font-size: 14px;
@@ -422,6 +422,16 @@ label { /* כותרות הטפסים */
     align-items: center;
     justify-content: center;
     cursor: pointer;
+}
+
+/* כיוון עברית ופונט רוביק לכל החלונות הקופצים באתר */
+.swal2-popup,
+.swal2-title,
+.swal2-html-container,
+.swal2-html-container *,
+.swal2-actions button {
+    direction: rtl !important;
+    font-family: 'Rubik', sans-serif !important;
 }
 
 
