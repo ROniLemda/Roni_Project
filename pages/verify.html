@@ -169,6 +169,17 @@ verifyForm.onsubmit = async function(e)
         });
         window.location.href = 'login.html';
     }
+    else if (verifyType === 'login')
+    {
+        // אימות דו-שלבי בהתחברות (2FA) הושלם בהצלחה
+        await Swal.fire({
+            icon: 'success',
+            text: 'ההתחברות בוצעה בהצלחה, מיד תועבר לסביבת העבודה שלך.',
+            confirmButtonText: 'כניסה למערכת',
+            confirmButtonColor: '#0052cc'
+        });
+        window.location.href = 'dashboard.html';
+    }
     else
     {
         // אם זה איפוס סיסמה מציגים את טופס קביעת הסיסמה החדשה 

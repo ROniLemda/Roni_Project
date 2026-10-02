@@ -155,7 +155,8 @@ async Task<string> RegisterUser(UserRegister data)
     return "נרשמת בהצלחה, קוד אימות בן 6 ספרות נשלח לכתובת האימייל שלך לצורך הפעלת החשבון.";
 }
 
-string LoginUser(UserLogin data)
+// פונקציית התחברות עם אימות דו שלבי (2FA)
+async Task<string> LoginUser(UserLogin data)
 {
     // מצפין את הסיסמה שהמשתמש הקליד עכשיו כדי להשוות למה ששמור בטבלה
     string hashPass = HashPassword(data.Password);
@@ -164,8 +165,8 @@ string LoginUser(UserLogin data)
     using var connection = new NpgsqlConnection(databaseAddress);
     connection.Open();
 
-    // משפט SQL שמחפש משתמש עם האימייל הזה ושולף את הסיסמה המוצפנת שלו
-    string sql = "SELECT password_hash, is_verified FROM users WHERE email = @loginInput OR username = @loginInput"; 
+    // שולפים את הסיסמה, סטטוס האימות ואת האימייל האמיתי (גם אם התחבר עם שם משתמש)
+    string sql = "SELECT password_hash, is_verified, email FROM users WHERE email = @loginInput OR username = @loginInput"; 
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@loginInput", data.Email);
     
@@ -178,19 +179,40 @@ string LoginUser(UserLogin data)
         return "המשתמש אינו קיים במערכת בדוק את פרטי ההתחברות ונסה שנית.";
     }
 
-    // שולפים את הסיסמה המוצפנת שנשמרה בעבר בטבלה
+    // שולפים את הנתונים מהשורה
     string savedPassword = reader.GetString(0);
     bool isVerified = reader.GetBoolean(1); // שולף האם החשבון מאומת
+    string userEmail = reader.GetString(2); // שולפים את כתובת האימייל האמיתית לשליחה
 
     // האם הסיסמה שהוקלדה עכשיו מתאימה למה ששמור
     if (hashPass == savedPassword)
     {
-       // חסימה אם החשבון עוד לא אומת
+        // חסימה אם החשבון עוד לא אומת
         if (isVerified == false)
         {
              return "המשתמש אינו קיים במערכת בדוק את פרטי ההתחברות ונסה שנית.";
         }
-       return "ההתחברות בוצעה בהצלחה, מיד תועבר לסביבת העבודה שלך.";
+
+        reader.Close(); // סוגרים את הקורא כדי שנוכל לעדכן את השורה בטבלה
+
+        // הפקת קוד אימות חדש בן 6 ספרות והצפנתו
+        string loginCode = Random.Shared.Next(100000, 1000000).ToString(); // הסבר במחברת לחפש על שם משתנה אחר
+        string hashedCode = HashPassword(loginCode);
+        DateTime expireTime = DateTime.UtcNow.AddMinutes(10); // תוקף ל10 דקות
+
+        // שמירת קוד האימות במסד הנתונים
+        string updateSql = "UPDATE users SET reset_code_hash = @code, reset_code_expires = @expire WHERE email = @email";
+        using var updateCmd = new NpgsqlCommand(updateSql, connection);
+        updateCmd.Parameters.AddWithValue("@code", hashedCode);
+        updateCmd.Parameters.AddWithValue("@expire", expireTime);
+        updateCmd.Parameters.AddWithValue("@email", userEmail);
+        updateCmd.ExecuteNonQuery(); // מבצע את הפעולה  
+
+        // שליחת המייל ל-Brevo
+        Console.WriteLine("קוד אימות להתחברות עבור " + userEmail + " הוא: " + loginCode);
+        await SendEmail(userEmail, loginCode);
+
+        return "שלחנו קוד אימות בן 6 ספרות לכתובת האימייל שלך לצורך השלמת תהליך ההתחברות.";   
     }
     else
     {
@@ -249,8 +271,8 @@ string VerifyResetCode(VerifyCodeRequest data)
     using var connection = new NpgsqlConnection(databaseAddress);
     connection.Open();
 
-    // שליפת הקוד השמור וזמן התפוגה לפי האימייל
-    string sql = "SELECT reset_code_hash, reset_code_expires FROM users WHERE email = @email";
+    // שליפת הקוד השמור וזמן התפוגה לפי האימייל או שם המשתמש
+    string sql = "SELECT reset_code_hash, reset_code_expires FROM users WHERE email = @email OR username = @email";
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@email", data.Email);
 
@@ -283,7 +305,7 @@ string VerifyResetCode(VerifyCodeRequest data)
 
     reader.Close();
     // מחיקת קוד האימות מהטבלה והפיכת החשבון למאומת רשמית
-    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, is_verified = true WHERE email = @email";
+    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, is_verified = true WHERE email = @email OR username = @email";
     using var clearCmd = new NpgsqlCommand(clearCodeSql, connection);
     clearCmd.Parameters.AddWithValue("@email", data.Email);
     clearCmd.ExecuteNonQuery();

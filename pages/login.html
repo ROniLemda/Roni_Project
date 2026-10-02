@@ -216,14 +216,17 @@ loginForm.onsubmit = async function(e)
 
   // קבלת התשובה מהשרת והצגתה
   const result = await response.text();
-  if (result.includes('בהצלחה'))
+  if (result.includes('בהצלחה') || result.includes('קוד אימות'))
   {
-      Swal.fire({
+      await Swal.fire({
           icon: 'success',
           text: result,
-          confirmButtonText: 'המשך',
+          confirmButtonText: 'המשך לתהליך האימות',
           confirmButtonColor: '#0052cc'
       });
+
+      // מעבירים לדף הזנת הקוד עם ציון סוג הפעולה כהתחברות
+      window.location.href = 'verify.html?type=login&email=' + loginEmail.value;
   }
   else
   {
