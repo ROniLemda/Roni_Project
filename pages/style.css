@@ -213,12 +213,14 @@ label { /* כותרות הטפסים */
 } 
 
 .forgot-pass {
+    font-family: 'Rubik', sans-serif; /* פונט רוביק */
     color: #154ac7; 
     font-size: 15px; /* גודל טקסט של המילים */
     font-weight: 600; /* עובי הטקסט */
 }
 
 .remember-me {
+    font-family: 'Rubik', sans-serif; /* פונט רוביק */
     color: #475569; 
     font-size: 15px; /* גודל טקסט של המילים */
     font-weight: 500; /* עובי הטקסט */
