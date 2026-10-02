@@ -43,7 +43,7 @@
             <button type="submit" class="login-button">Verify & Activate</button>
 
             <div class="resend-box">
-              <p class="resend-text">Didn't receive code? <a href="#" class="resend-link">Resend</a></p>
+              <p class="resend-text">Didn't receive code? <a href="#" id="resendBtn" class="resend-link">Resend</a></p>
             </div>
 
             <div class="change-email-box">
@@ -149,13 +149,12 @@ verifyForm.onsubmit = async function(e)
     if (result.includes('בהצלחה') === false) 
     {
       Swal.fire({
-      icon: 'error',
-      text: result,
-      confirmButtonText: 'סגירה',
-      confirmButtonColor: '#0052cc'
+          icon: 'error',
+          text: result,
+          confirmButtonText: 'סגירה',
+          confirmButtonColor: '#0052cc'
       });
-        otpCodeError.textContent = result;
-        return;
+      return;
     }
 
     const verifyType = urlParams.get('type');
@@ -303,6 +302,92 @@ newPasswordForm.onsubmit = async function(e)
     }
 };
 
+
+const resendBtn = document.getElementById('resendBtn'); // כפתור השליחת מייל מחדש
+// משתנה דגל שבודק האם אנחנו כרגע בהמתנה של 60 שניות
+let isWaiting = false;
+
+resendBtn.onclick = async function(e) 
+{
+    e.preventDefault(); // עוצר את הריפרש ברירת המחדל |
+
+    // (שהכפתור לא יעבוד) אם השעון כבר רץ מתעלמים מהלחיצה ועוצרים מיד
+    if (isWaiting === true) 
+    {
+        return;
+    }
+
+    // שליפת האימייל מה URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const userEmail = urlParams.get('email');
+
+   const response = await fetch(API_URL + '/api/resend-code', 
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: userEmail })
+  });
+
+  // אם השרת התרסק (קוד 500) או שיש בעיית תקשורת כללית
+  if (response.ok === false) 
+  {
+    Swal.fire({
+        icon: 'error',
+        text: 'אירעה תקלה בשרת בעת שליחת המייל, אנא נסה שוב מאוחר יותר.',
+        confirmButtonText: 'סגירה',
+        confirmButtonColor: '#0052cc'
+    });
+    return; // עוצרים מיד ולא מציגים שום שגיאה באנגלית למשתמש
+  }
+
+  // קוראים את הודעת הטקסט שהשרת מחזיר לנו
+  const result = await response.text();
+
+// אם התשובה מהשרת מכילה את המילה "נשלח" סימן שהתשובה עברה
+if (result.includes('נשלח')) 
+{
+    // מציגים הודעת הצלחה ירוקה
+    Swal.fire({
+        icon: 'success',
+        text: result,
+        confirmButtonText: 'אישור',
+        confirmButtonColor: '#58ED6A'
+    });
+
+    // הפעלת נעילה של 60 שניות
+    isWaiting = true;
+    let seconds = 60;
+    resendBtn.style.opacity = '0.5'; // הופך את הכפתור לחצי שקוף
+    resendBtn.textContent = 'שלח שוב בעוד ' + seconds + ' שניות';
+
+    // שעון שמוריד שנייה אחת כל 1000 אלפיות שנייה (שנייה אחת)
+    const timer = setInterval(function() 
+    {
+        seconds--;  
+        resendBtn.textContent = 'שלח שוב בעוד ' + seconds + ' שניות';
+
+        // כשהגענו ל-0
+        if (seconds === 0) 
+        {
+            clearInterval(timer);             // עוצר את השעון
+            isWaiting = false;                // מכבה את הנעילה
+            resendBtn.textContent = 'Resend'; // מחזיר את הטקסט המקורי
+            resendBtn.style.opacity = '1';    // מחזיר צבע מלא
+        }
+    }, 1000);
+  }
+else 
+{
+    // אחרת הייתה שגיאה כלשהי (האימייל לא קיים, בעיית תקשורת וכו')
+    Swal.fire({
+        icon: 'error',
+        text: result,
+        confirmButtonText: 'סגירה',
+        confirmButtonColor: '#0052cc'
+    });
+}
+
+}
 </script>
 
 </body>

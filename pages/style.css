@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap');
+
 * { 
     margin: 0; /* מוחק את הרווחים החיצוניים  שהדפדפן מייצר אוטומטית */
     padding: 0; /* מוחק את הרווחים הפנימיים שהדפדפן מייצר אוטומטית */
@@ -380,6 +382,7 @@ label { /* כותרות הטפסים */
     text-align: right; /* צמוד לימין של השדה */
     margin-top: 3px; /* צמוד ישר מתחת לתיבה כדי לא להגדיל את הרווח הכללי */
     display: block;
+    font-family: 'Rubik', sans-serif !important; /* פונט רוביק נקי ומדויק להודעות שגיאה בעברית */
 }
 
 /* שדה שיש בו שגיאה רק מסגרת אדומה, רקע לבן */
