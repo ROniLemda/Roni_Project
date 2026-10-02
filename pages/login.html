@@ -61,7 +61,7 @@
         <img src="../images/google.png" alt="Google"> Continue with Google
     </button>
     
-    <button class="social-btn facebook-btn">
+    <button type="button" class="social-btn facebook-btn" id="facebookLoginBtn">
         <img src="../images/facebook.png" alt="Facebook"> Continue with Facebook
     </button>
     
@@ -122,11 +122,11 @@
     <button type="button" class="social-btn google-btn" id="googleSignupBtn">
         <img src="../images/google.png" alt="Google"> Sign up with Google
     </button>
-        <button class="social-btn facebook-btn">
+    <button type="button" class="social-btn facebook-btn" id="facebookSignupBtn">
         <img src="../images/facebook.png" alt="Facebook"> Sign up with Facebook
     </button>
     
-    <button class="social-btn microsoft-btn">
+    <button type="button" class="social-btn microsoft-btn" id="microsoftSignupBtn">
         <img src="../images/microsoft.png" alt="Microsoft"> Sign up with Microsoft
     </button>
 </div>
@@ -477,6 +477,45 @@ document.getElementById('googleSignupBtn').onclick = function(e)
 {
     e.preventDefault();
     openGoogle(); // פעולה שמעבירה לחלון
+};
+
+// פונקציה להצגת הודעת "בקרוב" לאפשרויות התחברות נוספות
+function showComingSoon() 
+{
+    Swal.fire({
+        icon: 'info',
+        iconColor: '#0052cc',
+        title: 'אפשרות זו תהיה זמינה בקרוב',
+        text: 'אנו עובדים על פיתוח אפשרויות התחברות נוספות על מנת להעניק לך חוויית שימוש נוחה ומהירה יותר בינתיים, ניתן להתחבר באמצעות Google או באמצעות דואר אלקטרוני וסיסמה',
+        confirmButtonText: 'הבנתי',
+        confirmButtonColor: '#0052cc'
+    });
+}
+
+// כפתורי פייסבוק ומייקרוסופט בהתחברות
+document.getElementById('facebookLoginBtn').onclick = function(e) 
+{
+    e.preventDefault();
+    showComingSoon();
+};
+
+document.getElementById('microsoftLoginBtn').onclick = function(e) 
+{
+    e.preventDefault();
+    showComingSoon();
+};
+
+// כפתורי פייסבוק ומייקרוסופט בהרשמה
+document.getElementById('facebookSignupBtn').onclick = function(e) 
+{
+    e.preventDefault();
+    showComingSoon();
+};
+
+document.getElementById('microsoftSignupBtn').onclick = function(e) 
+{
+    e.preventDefault();
+    showComingSoon();
 };
 
 </script>
