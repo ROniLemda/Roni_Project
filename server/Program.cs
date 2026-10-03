@@ -16,6 +16,9 @@ var databaseAddress = builder.Configuration.GetConnectionString("DefaultConnecti
 var brevoApiKey = builder.Configuration["Brevo:ApiKey"];
 var brevoTemplateId = int.Parse(builder.Configuration["Brevo:TemplateId"] ?? "1");
 
+// שליפת המפתח הסודי של reCAPTCHA
+var recaptchaSecretKey = builder.Configuration["Recaptcha:SecretKey"] ?? "";
+
 // הוספת כלי ה-CORS לארגז הכלים של השרת
 builder.Services.AddCors();
 
@@ -158,6 +161,19 @@ async Task<string> RegisterUser(UserRegister data)
 // פונקציית התחברות עם אימות דו שלבי (2FA)
 async Task<string> LoginUser(UserLogin data)
 {
+    //  פנייה לגוגל לוודא שהאימות אכן אמיתי ולא בוט
+    using var httpClient = new HttpClient();
+    string verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=" + recaptchaSecretKey + "&response=" + data.CaptchaToken;
+    string captchaResponse = await httpClient.GetStringAsync(verifyUrl);
+
+    // קריאת התשובה של גוגל
+    using var jsonDoc = JsonDocument.Parse(captchaResponse);
+    bool isHuman = jsonDoc.RootElement.GetProperty("success").GetBoolean();
+
+    if (isHuman == false)
+    {
+     return "אימות האבטחה של reCAPTCHA נכשל, אנא אשר שאינך רובוט ונסה שנית.";
+    }
     // מצפין את הסיסמה שהמשתמש הקליד עכשיו כדי להשוות למה ששמור בטבלה
     string hashPass = HashPassword(data.Password);
 
@@ -460,6 +476,7 @@ class UserLogin
 {
     public string Email { get; set; } = "";
     public string Password { get; set; } = "";
+         public string CaptchaToken { get; set; } = ""; // הטוקן שקיבלנו מהדפדפן
 }
 
 // מחלקה לקליטת נתוני אימות משתמש באיפוס סיסמה

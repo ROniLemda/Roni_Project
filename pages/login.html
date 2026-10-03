@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="../pages/style.css">  <!-- מחבר עיצוב -->
     <script src="auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script> 
     <title>דף התחברות מערכת חתימה+ | חתימה דיגיטלית מאובטחת</title>
   </head>
 
@@ -45,7 +46,7 @@
         <div class="options-box"> <!--  זכור אותי ושכחתי סיסמה -->
         <a href="reset-password.html" class="forgot-pass">Forgot password?</a>    
               <label class="remember-me">
-           <input type="checkbox"> <!-- תיבת הסימון -->
+           <input type="checkbox" id="rememberMe"> <!-- תיבת הסימון -->
             Remember me 
          </label>
       </div>
@@ -199,12 +200,62 @@ loginForm.onsubmit = async function(e)
         return;
     }
 
+    const captchaResult = await Swal.fire({
+        title: 'תהליך אימות ואבטחה',
+        text: 'אנא אשר שאינך רובוט להמשך תהליך ההתחברות',
+        html: '<div id="recaptchaContainer" style="display: flex; justify-content: center; margin-top: 15px;"></div>',
+        showCancelButton: true,
+        cancelButtonText: 'ביטול',
+        confirmButtonText: 'אימות והמשך',
+        confirmButtonColor: '#0052cc',
+        
+        didOpen: function() 
+        {
+            // פקודה שאומרת לספרייה של גוגל לצייר את הריבוע של "אני לא רובוט"
+            grecaptcha.render('recaptchaContainer', {
+                'sitekey': '6LcYwtwtAAAAAAhXegnxfU7xOocojmQfsBqjZAyY' // מפתח האתר הרשמי שלך
+            });
+        },
+
+        preConfirm: function()  // מבצע כמה דברים לפני שממשיכים
+        {
+            // שולפים את הטוקן שגוגל מייצרת כשמסמנים את הריבוע
+            const captchaToken = grecaptcha.getResponse();
+            
+            // אם הטוקן ריק (הוא לא סימן את הריבוע)
+            if (captchaToken == false) 
+            {
+                Swal.showValidationMessage('אימות האבטחה של reCAPTCHA נכשל נא אשר שאינך רובוט ונסה שנית.');
+                return false; // עוצר את החלון ולא נותן לו להיסגר!
+            }
+            return captchaToken;
+        }
+    });
+
+    // אם המשתמש לחץ על כפתור ביטול עוצרים מיד ולא שולחים לשרת
+    if (captchaResult.isConfirmed === false) 
+    {
+        return;
+    }
+
+    // טיפול ב-"זכור אותי": אם מסומן שומרים, אם לא - מוחקים מהזיכרון
+    const rememberMe = document.getElementById('rememberMe');
+    if (rememberMe.checked === true) 
+    {
+        localStorage.setItem('rememberedUser', loginEmail.value);
+    }
+    else 
+    {
+        localStorage.removeItem('rememberedUser');
+    }
+
     // אריזת פרטי ההתחברות לחבילה
     const loginData = 
     {
-    email: loginEmail.value,
-    password: loginPassword.value
-   };
+        email: loginEmail.value,
+        password: loginPassword.value,
+        captchaToken: captchaResult.value
+    };
 
    // שליחה לשרת לנתיב /api/login
    const response = await fetch(API_URL + '/api/login',
@@ -238,7 +289,6 @@ loginForm.onsubmit = async function(e)
       });
   }
 }
-// סיום הדפסה למסך הודעת שגיאה בהתחברות
 
 // הדפסה למסך הודעת שגיאה בעת הרשמה
 const signupForm = document.getElementById('signupForm'); //  טופס ההרשמה ופרטי התחברות
@@ -433,9 +483,17 @@ async function loginWithGoogle(token)
 }
 
 
-// בדיקה האם גוגל החזירה לנו טוקן 
+// בדיקה בעת טעינת הדף 
 window.onload = function() 
 {
+    // שחזור אימייל שמור (אם המשתמש סימן "זכור אותי" בעבר)
+    const savedUser = localStorage.getItem('rememberedUser');
+    if (savedUser) 
+    {
+        document.getElementById('loginEmail').value = savedUser;
+        document.getElementById('rememberMe').checked = true;
+    }
+
     // בודק אם חזרנו מגוגל עם טוקן
     if (window.location.hash.includes('id_token=')) 
     {
