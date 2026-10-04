@@ -150,7 +150,7 @@ verifyForm.onsubmit = async function(e)
     {
       Swal.fire({
           icon: 'error',
-          text: result,
+          text: result.split('|')[0],     
           confirmButtonText: 'סגירה',
           confirmButtonColor: '#0052cc'
       });
@@ -171,6 +171,20 @@ verifyForm.onsubmit = async function(e)
     }
     else if (verifyType === 'login')
     {
+        // מפרקים את התשובה מהשרת (מופרדת בסימן |)
+        const parts = result.split('|');
+        const userFullName = parts[1] || 'משתמש מחובר';
+        const userEmailAddress = parts[2] || userEmail;
+
+        // שומרים בזיכרון של הדפדפן (localStorage)
+        const userAuthToken = parts[3] || '';
+        localStorage.setItem('authToken', userAuthToken);
+        localStorage.setItem('currentUser', JSON.stringify({
+            fullName: userFullName,
+            email: userEmailAddress
+        }));
+
+
         // אימות דו-שלבי בהתחברות (2FA) הושלם בהצלחה
         await Swal.fire({
             icon: 'success',
@@ -185,12 +199,13 @@ verifyForm.onsubmit = async function(e)
         // אם זה איפוס סיסמה מציגים את טופס קביעת הסיסמה החדשה 
         await Swal.fire({
             icon: 'success',
-            text: result, // "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה."
-            confirmButtonText: 'המשך',
+            text: result.split('|')[0], // "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה."            confirmButtonText: 'המשך',
             confirmButtonColor: '#0052cc'
         });
         document.querySelector('.verify-panel').style.display = 'none';
         document.getElementById('newPasswordPanel').style.display = 'block';
+
+        sessionStorage.setItem('resetToken', result.split('|')[3]);
     }
 }
 
@@ -278,7 +293,8 @@ newPasswordForm.onsubmit = async function(e)
       const updateData = 
       {
           email: userEmail,
-          newPassword: newPassInput.value
+          newPassword: newPassInput.value,
+          token: sessionStorage.getItem('resetToken') || ''
       };
 
     // שליחה לשרת לנתיב /api/update-password
@@ -292,16 +308,19 @@ newPasswordForm.onsubmit = async function(e)
     // קבלת התשובה והעברה לדף ההתחברות
     const result = await response.text();
     
-    if (result.includes('בהצלחה')) 
-    {
-     await Swal.fire({
-      icon: 'success',
-      text: result,
-      confirmButtonText: 'מעבר להתחברות',
-      confirmButtonColor: '#0052cc'
-     });
-        window.location.href = 'login.html';
-    }
+     if (result.includes('בהצלחה')) 
+     {
+         // מחיקת טוקן האיפוס הזמני מהזיכרון לאחר שהסיסמה עודכנה בהצלחה
+         sessionStorage.removeItem('resetToken');
+
+         await Swal.fire({
+          icon: 'success',
+          text: result,
+          confirmButtonText: 'מעבר להתחברות',
+          confirmButtonColor: '#0052cc'
+         });
+         window.location.href = 'login.html';
+     }
     else
     {
        Swal.fire({

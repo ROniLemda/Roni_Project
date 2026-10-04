@@ -238,15 +238,15 @@ loginForm.onsubmit = async function(e)
         return;
     }
 
-    // טיפול ב-"זכור אותי": אם מסומן שומרים, אם לא - מוחקים מהזיכרון
+    // טיפול בזכור אותי אם מסומן שומרים, אם לא מוחקים מהזיכרון
     const rememberMe = document.getElementById('rememberMe');
-    if (rememberMe.checked === true) 
+    if (rememberMe.checked === true)  // מסומן
     {
-        localStorage.setItem('rememberedUser', loginEmail.value);
+        localStorage.setItem('rememberedUser', loginEmail.value); // שומר את המייל
     }
     else 
     {
-        localStorage.removeItem('rememberedUser');
+        localStorage.removeItem('rememberedUser'); // מסיר את המייל
     }
 
     // אריזת פרטי ההתחברות לחבילה
@@ -460,16 +460,30 @@ async function loginWithGoogle(token)
 
     if (result.includes('בהצלחה')) 
     {
+        // מפרקים את התשובה מהשרת: הודעה|שם|מייל|טוקן
+        const parts = result.split('|');
+        const messageText = parts[0];
+        const userFullName = parts[1] || 'משתמש מחובר';
+        const userEmailAddress = parts[2] || '';
+        const userAuthToken = parts[3] || '';
+
+        // שמירת הטוקן ופרטי המשתמש בדפדפן
+        localStorage.setItem('authToken', userAuthToken);
+        localStorage.setItem('currentUser', JSON.stringify({
+            fullName: userFullName,
+            email: userEmailAddress
+        }));
+
         await Swal.fire({
             icon: 'success',
             iconColor: '#5AD64E',
-            text: result,
+            text: messageText,
             confirmButtonText: 'המשך',
             confirmButtonColor: '#0052cc'
         });
 
-        // התחבר בהצלחה מעבירים לסביבת העבודה
-        window.location.href = 'login.html';
+        // התחבר בהצלחה מעבירים לסביבת העבודה (דשבורד)
+        window.location.href = 'dashboard.html';
     }
     else
     {
@@ -488,10 +502,10 @@ window.onload = function()
 {
     // שחזור אימייל שמור (אם המשתמש סימן "זכור אותי" בעבר)
     const savedUser = localStorage.getItem('rememberedUser');
-    if (savedUser) 
+    if (savedUser) // אם יש ונמצא
     {
-        document.getElementById('loginEmail').value = savedUser;
-        document.getElementById('rememberMe').checked = true;
+        document.getElementById('loginEmail').value = savedUser; // ממלא את השדה במייל
+        document.getElementById('rememberMe').checked = true; // מסמן את התיבה זכור אותי בוי
     }
 
     // בודק אם חזרנו מגוגל עם טוקן

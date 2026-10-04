@@ -288,7 +288,7 @@ string VerifyResetCode(VerifyCodeRequest data)
     connection.Open();
 
     // שליפת הקוד השמור וזמן התפוגה לפי האימייל או שם המשתמש
-    string sql = "SELECT reset_code_hash, reset_code_expires FROM users WHERE email = @email OR username = @email";
+    string sql = "SELECT reset_code_hash, reset_code_expires, full_name, email FROM users WHERE email = @email OR username = @email";
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@email", data.Email);
 
@@ -303,9 +303,12 @@ string VerifyResetCode(VerifyCodeRequest data)
     {
         return "לא נמצא קוד אימות בתוקף עבור משתמש זה, יש לבקש קוד חדש.";
     }
+
     // שולפים את הנתונים מהעמודות
     string savedHashedCode = reader.GetString(0);
     DateTime expireTime = reader.GetDateTime(1);
+    string fullName = reader.GetString(2);
+    string verifiedEmail = reader.GetString(3);
 
     // בדיקה האם עברו 10 דקות (הקוד פג תוקף)
     if (DateTime.UtcNow > expireTime)
@@ -320,13 +323,19 @@ string VerifyResetCode(VerifyCodeRequest data)
     }
 
     reader.Close();
-    // מחיקת קוד האימות מהטבלה והפיכת החשבון למאומת רשמית
-    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, is_verified = true WHERE email = @email OR username = @email";
+
+    string authToken = Guid.NewGuid().ToString("N");
+    DateTime tokenExpires = DateTime.UtcNow.AddDays(1);
+
+    // מחיקת קוד האימות, אימות החשבון ושמירת ה-auth_token
+    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, is_verified = true, auth_token = @token, token_expires = @expires WHERE email = @email OR username = @email";
     using var clearCmd = new NpgsqlCommand(clearCodeSql, connection);
+    clearCmd.Parameters.AddWithValue("@token", authToken);
+    clearCmd.Parameters.AddWithValue("@expires", tokenExpires);
     clearCmd.Parameters.AddWithValue("@email", data.Email);
     clearCmd.ExecuteNonQuery();
 
-    return "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה.";
+    return "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה.|" + fullName + "|" + verifiedEmail + "|" + authToken;
 }
 
 // פונקציה לשליחה מחדש של קוד אימות
@@ -379,15 +388,16 @@ string UpdatePassword(UpdatePasswordRequest data)
     connection.Open();
 
     // עדכון הסיסמה ומחיקת קוד האיפוס (שלא ישתמשו בו שוב)
-    string sql = "UPDATE users SET password_hash = @newPass, reset_code_hash = NULL, reset_code_expires = NULL WHERE email = @email";
+    string sql = "UPDATE users SET password_hash = @newPass, auth_token = NULL, token_expires = NULL WHERE email = @email AND auth_token = @token AND token_expires > NOW()";   
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@newPass", newHashedPass);
     command.Parameters.AddWithValue("@email", data.Email);
+    command.Parameters.AddWithValue("@token", data.Token);
 
     int count = command.ExecuteNonQuery();
     if (count == 0)
     {
-     return "שם המשתמש או הסיסמה אינם תקינים, אנא בדוק את הפרטים.";  
+     return "אינך מורשה לבצע פעולה זו או שתוקף הפעולה פג, יש לבקש קוד לאימות מחדש."; 
     }
     return "הסיסמה החדשה שונתה בהצלחה, כעת ניתן להתחבר לחשבונך.";
 }
@@ -406,6 +416,14 @@ async Task<string> GoogleLogin(GoogleLoginRequest data)
         
         // קריאת האימייל והשם מתוך התשובה של גוגל
         using var jsonDoc = JsonDocument.Parse(googleResponse);
+
+        // בדיקת אבטחה: מוודאים שהטוקן הופק ספציפית עבור האתר שלנו ולא עבור אפליקציה זרה
+        string audience = jsonDoc.RootElement.GetProperty("aud").GetString() ?? "";
+        if (audience != "541544347287-kike3l6ru9nuroq4thre6tuvreffa8s2.apps.googleusercontent.com")
+        {
+            return "אימות החשבון מול Google נכשל, מזהה אפליקציה לא מורשה.";
+        }
+
         email = jsonDoc.RootElement.GetProperty("email").GetString() ?? ""; // שולפים את המייל המלא של המשתמש 
         name = jsonDoc.RootElement.GetProperty("name").GetString() ?? ""; // שולפים את השם המלא של המשתמש
     }
@@ -418,6 +436,9 @@ async Task<string> GoogleLogin(GoogleLoginRequest data)
     using var connection = new NpgsqlConnection(databaseAddress);
     connection.Open();
 
+    string authToken = Guid.NewGuid().ToString("N"); // יש הסבר על זה בפעולה אחרת
+    DateTime tokenExpires = DateTime.UtcNow.AddDays(1); // כנל למעלה
+
     // בדיקה האם המשתמש כבר קיים בטבלה
     string checkSql = "SELECT id FROM users WHERE email = @email";
     using var checkCmd = new NpgsqlCommand(checkSql, connection);
@@ -426,21 +447,71 @@ async Task<string> GoogleLogin(GoogleLoginRequest data)
     using var reader = checkCmd.ExecuteReader();
     if (reader.Read() == true)
     {
-        // המשתמש קיים מחברים אותו ישר!
-       return "ההתחברות באמצעות Google בוצעה בהצלחה, לחץ המשך על מנת לעבור לסביבת העבודה שלך.";
+        reader.Close();
+        
+        // עדכון הטוקן בטבלה למשתמש קיים
+        string updateSql = "UPDATE users SET auth_token = @token, token_expires = @expires WHERE email = @email";
+        using var updateCmd = new NpgsqlCommand(updateSql, connection);
+        updateCmd.Parameters.AddWithValue("@token", authToken);
+        updateCmd.Parameters.AddWithValue("@expires", tokenExpires);
+        updateCmd.Parameters.AddWithValue("@email", email);
+        updateCmd.ExecuteNonQuery();
+
+        return "ההתחברות באמצעות Google בוצעה בהצלחה, לחץ המשך על מנת לעבור לסביבת העבודה שלך.|" + name + "|" + email + "|" + authToken;
     }
-    reader.Close();
 
     // משתמש חדש רושמים אותו אוטומטית לטבלה users
     string usernameFromEmail = email.Split('@')[0]; // גוזר שם משתמש מהאימייל
-    string insertSql = "INSERT INTO users (full_name, username, email, password_hash, is_verified) VALUES (@name, @user, @email, 'GOOGLE_AUTH', true)";
+    string insertSql = "INSERT INTO users (full_name, username, email, password_hash, is_verified, auth_token, token_expires) VALUES (@name, @user, @email, 'GOOGLE_AUTH', true, @token, @expires)";
     using var insertCmd = new NpgsqlCommand(insertSql, connection);
     insertCmd.Parameters.AddWithValue("@name", name);
     insertCmd.Parameters.AddWithValue("@user", usernameFromEmail);
     insertCmd.Parameters.AddWithValue("@email", email);
+    insertCmd.Parameters.AddWithValue("@token", authToken);
+    insertCmd.Parameters.AddWithValue("@expires", tokenExpires);
     insertCmd.ExecuteNonQuery();
 
-    return "החשבון נוצר בהצלחה באמצעות Google, מיד תועבר לסביבת העבודה שלך.";
+    return "החשבון נוצר בהצלחה באמצעות Google, מיד תועבר לסביבת העבודה שלך.|" + name + "|" + email + "|" + authToken;
+}
+
+// בדיקת אבטחה האם ה auth_token קיים בטבלה ובתוקף
+string VerifyToken(TokenCheck data)
+{
+    // פתיחה החיבור למסד נתונים
+    using var connection = new NpgsqlConnection(databaseAddress);
+    connection.Open();
+
+    // בודק אם יש משתמש עם הטוקן הזה שהתוקף שלו לא עבר
+    string sql = "SELECT full_name, email FROM users WHERE auth_token = @token AND token_expires > NOW()";
+    using var cmd = new NpgsqlCommand(sql, connection);
+    cmd.Parameters.AddWithValue("@token", data.Token);
+
+    using var reader = cmd.ExecuteReader(); // מריץ אץ הפקודה במסד 
+    if (reader.Read() == false)
+    {
+        return "הטוקן אינו תקין או פג תוקף";
+    }
+
+    string name = reader.GetString(0); 
+    string email = reader.GetString(1);
+
+    return "תקין|" + name + "|" + email;
+}
+
+// פונקציית התנתקות מחיקת הטוקן ממסד הנתונים כדי שלא ניתן יהיה להשתמש בו שוב
+string LogoutUser(TokenCheck data)
+{
+    // פתיחת חיבור למסד הנתונים
+    using var connection = new NpgsqlConnection(databaseAddress);
+    connection.Open();
+
+    // איפוס הטוקן והתוקף לשורה של המשתמש בעל הטוקן הזה
+    string sql = "UPDATE users SET auth_token = NULL, token_expires = NULL WHERE auth_token = @token";
+    using var cmd = new NpgsqlCommand(sql, connection);
+    cmd.Parameters.AddWithValue("@token", data.Token);
+    cmd.ExecuteNonQuery();
+
+    return "ההתנתקות מהמערכת בוצעה בהצלחה, נשמח לראותך שוב בקרוב";
 }
 
 //  פותח את דף הבית הראשי של השרת ומפעיל את הפונקציה למעלה כדי להציג את המשפט
@@ -459,6 +530,10 @@ app.MapPost("/api/update-password", UpdatePassword); // מחבר את פונקצ
 app.MapPost("/api/google-login", GoogleLogin); // מחבר את פונקציית ה-GoogleLogin
 
 app.MapPost("/api/resend-code", ResendCode); // מחבר את פונקציית ה-ResendCode
+
+app.MapPost("/api/verify-token", VerifyToken); // מחבר את פונקציית אימות הטוקן לדשבורד
+
+app.MapPost("/api/logout", LogoutUser); // מחבר את פונקציית ההתנתקות המאובטחת
 
 app.Run(); // מפעיל את השרת כדי שיתחיל להקשיב בלייב לבקשות של האתר
 
@@ -498,6 +573,7 @@ class UpdatePasswordRequest
 {
     public string Email { get; set; } = "";
     public string NewPassword { get; set; } = "";
+    public string Token { get; set; } = ""; // הטוקן שנוצר באימות הקוד
 }
 
 // מחלקה לקליטת טוקן ההתחברות מגוגל
@@ -531,4 +607,10 @@ class EmailMessage
 class ResendCodeRequest
 {
     public string Email { get; set; } = "";
+}
+
+// מחלקה לקליטת טוקן האימות מהדשבורד
+class TokenCheck
+{
+    public string Token { get; set; } = "";
 }
