@@ -3,7 +3,7 @@ const API_URL = 'http://localhost:5057';
 
 window.onload = async function() 
 {
-   // בדיקה אם יש משתמש שמור בזיכרון של הדפדפן
+    // בדיקה אם יש משתמש שמור בזיכרון של הדפדפן
     const savedUser = localStorage.getItem('currentUser');
 
     // אם לא מחובר זורק אותו להתחברות
@@ -16,7 +16,7 @@ window.onload = async function()
     // שולפים את הטוקן מזיכרון הדפדפן
     const authToken = localStorage.getItem('authToken');
 
-    // בדיקה אם אין טוקן מעיפים מיד להתחברות
+    // בדיקה: אם אין טוקן מעיפים מיד להתחברות
     if (authToken === null || authToken === '') 
     {
         window.location.replace('login.html');

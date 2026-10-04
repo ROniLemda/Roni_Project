@@ -2,41 +2,6 @@
   "version": 3,
   "targets": {
     "net10.0": {
-      "Microsoft.AspNetCore.OpenApi/10.0.7": {
-        "type": "package",
-        "dependencies": {
-          "Microsoft.OpenApi": "2.0.0"
-        },
-        "compile": {
-          "lib/net10.0/Microsoft.AspNetCore.OpenApi.dll": {
-            "related": ".xml"
-          }
-        },
-        "runtime": {
-          "lib/net10.0/Microsoft.AspNetCore.OpenApi.dll": {
-            "related": ".xml"
-          }
-        },
-        "frameworkReferences": [
-          "Microsoft.AspNetCore.App"
-        ],
-        "build": {
-          "build/Microsoft.AspNetCore.OpenApi.targets": {}
-        }
-      },
-      "Microsoft.OpenApi/2.0.0": {
-        "type": "package",
-        "compile": {
-          "lib/net8.0/Microsoft.OpenApi.dll": {
-            "related": ".pdb;.xml"
-          }
-        },
-        "runtime": {
-          "lib/net8.0/Microsoft.OpenApi.dll": {
-            "related": ".pdb;.xml"
-          }
-        }
-      },
       "Npgsql/10.0.3": {
         "type": "package",
         "compile": {
@@ -53,42 +18,6 @@
     }
   },
   "libraries": {
-    "Microsoft.AspNetCore.OpenApi/10.0.7": {
-      "sha512": "vKiAcGXG0BwNVw3bOjjWRLnp9tR18dR7MiwpvC94h0yFS+zfnzGHzS/JmmgwUdRixrGxrlIMRAWrVc+2DfAGlg==",
-      "type": "package",
-      "path": "microsoft.aspnetcore.openapi/10.0.7",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "Icon.png",
-        "PACKAGE.md",
-        "THIRD-PARTY-NOTICES.TXT",
-        "analyzers/dotnet/cs/Microsoft.AspNetCore.OpenApi.SourceGenerators.dll",
-        "build/Microsoft.AspNetCore.OpenApi.targets",
-        "lib/net10.0/Microsoft.AspNetCore.OpenApi.dll",
-        "lib/net10.0/Microsoft.AspNetCore.OpenApi.xml",
-        "microsoft.aspnetcore.openapi.10.0.7.nupkg.sha512",
-        "microsoft.aspnetcore.openapi.nuspec"
-      ]
-    },
-    "Microsoft.OpenApi/2.0.0": {
-      "sha512": "GGYLfzV/G/ct80OZ45JxnWP7NvMX1BCugn/lX7TH5o0lcVaviavsLMTxmFV2AybXWjbi3h6FF1vgZiTK6PXndw==",
-      "type": "package",
-      "path": "microsoft.openapi/2.0.0",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "README.md",
-        "lib/net8.0/Microsoft.OpenApi.dll",
-        "lib/net8.0/Microsoft.OpenApi.pdb",
-        "lib/net8.0/Microsoft.OpenApi.xml",
-        "lib/netstandard2.0/Microsoft.OpenApi.dll",
-        "lib/netstandard2.0/Microsoft.OpenApi.pdb",
-        "lib/netstandard2.0/Microsoft.OpenApi.xml",
-        "microsoft.openapi.2.0.0.nupkg.sha512",
-        "microsoft.openapi.nuspec"
-      ]
-    },
     "Npgsql/10.0.3": {
       "sha512": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
       "type": "package",
@@ -111,12 +40,11 @@
   },
   "projectFileDependencyGroups": {
     "net10.0": [
-      "Microsoft.AspNetCore.OpenApi >= 10.0.7",
       "Npgsql >= 10.0.3"
     ]
   },
   "packageFolders": {
-    "/Users/roni_levy/.nuget/packages/": {}
+    "/tmp/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
@@ -124,11 +52,11 @@
       "projectUniqueName": "/Users/roni_levy/Documents/Roni_Project/server/server.csproj",
       "projectName": "server",
       "projectPath": "/Users/roni_levy/Documents/Roni_Project/server/server.csproj",
-      "packagesPath": "/Users/roni_levy/.nuget/packages/",
+      "packagesPath": "/tmp/.nuget/packages/",
       "outputPath": "/Users/roni_levy/Documents/Roni_Project/server/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/Users/roni_levy/.nuget/NuGet/NuGet.Config"
+        "/tmp/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
@@ -158,10 +86,6 @@
       "net10.0": {
         "targetAlias": "net10.0",
         "dependencies": {
-          "Microsoft.AspNetCore.OpenApi": {
-            "target": "Package",
-            "version": "[10.0.7, )"
-          },
           "Npgsql": {
             "target": "Package",
             "version": "[10.0.3, )"
@@ -603,17 +527,5 @@
         }
       }
     }
-  },
-  "logs": [
-    {
-      "code": "NU1903",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
-      "libraryId": "Microsoft.OpenApi",
-      "targetGraphs": [
-        "net10.0"
-      ]
-    }
-  ]
+  }
 }

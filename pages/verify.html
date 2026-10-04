@@ -199,7 +199,8 @@ verifyForm.onsubmit = async function(e)
         // אם זה איפוס סיסמה מציגים את טופס קביעת הסיסמה החדשה 
         await Swal.fire({
             icon: 'success',
-            text: result.split('|')[0], // "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה."            confirmButtonText: 'המשך',
+            text: result.split('|')[0], // "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה."
+            confirmButtonText: 'המשך',
             confirmButtonColor: '#0052cc'
         });
         document.querySelector('.verify-panel').style.display = 'none';

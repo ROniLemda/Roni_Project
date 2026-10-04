@@ -10,11 +10,11 @@
         "projectUniqueName": "/Users/roni_levy/Documents/Roni_Project/server/server.csproj",
         "projectName": "server",
         "projectPath": "/Users/roni_levy/Documents/Roni_Project/server/server.csproj",
-        "packagesPath": "/Users/roni_levy/.nuget/packages/",
+        "packagesPath": "/tmp/.nuget/packages/",
         "outputPath": "/Users/roni_levy/Documents/Roni_Project/server/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/roni_levy/.nuget/NuGet/NuGet.Config"
+          "/tmp/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"
@@ -44,10 +44,6 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "dependencies": {
-            "Microsoft.AspNetCore.OpenApi": {
-              "target": "Package",
-              "version": "[10.0.7, )"
-            },
             "Npgsql": {
               "target": "Package",
               "version": "[10.0.3, )"

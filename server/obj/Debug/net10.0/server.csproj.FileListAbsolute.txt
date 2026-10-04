@@ -6,8 +6,6 @@
 /Users/roni_levy/Documents/Roni_Project/server/bin/Debug/net10.0/server.runtimeconfig.json
 /Users/roni_levy/Documents/Roni_Project/server/bin/Debug/net10.0/server.dll
 /Users/roni_levy/Documents/Roni_Project/server/bin/Debug/net10.0/server.pdb
-/Users/roni_levy/Documents/Roni_Project/server/bin/Debug/net10.0/Microsoft.AspNetCore.OpenApi.dll
-/Users/roni_levy/Documents/Roni_Project/server/bin/Debug/net10.0/Microsoft.OpenApi.dll
 /Users/roni_levy/Documents/Roni_Project/server/bin/Debug/net10.0/Npgsql.dll
 /Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/server.csproj.AssemblyReference.cache
 /Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/rpswa.dswa.cache.json
@@ -15,7 +13,6 @@
 /Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/server.AssemblyInfoInputs.cache
 /Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/server.AssemblyInfo.cs
 /Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/server.csproj.CoreCompileInputs.cache
-/Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/server.MvcApplicationPartsAssemblyInfo.cs
 /Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/server.MvcApplicationPartsAssemblyInfo.cache
 /Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/server.sourcelink.json
 /Users/roni_levy/Documents/Roni_Project/server/obj/Debug/net10.0/rjimswa.dswa.cache.json
