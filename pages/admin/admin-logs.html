@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<!-- הגדרת שפה לעברית וכיוון קריאה מימין לשמאל (RTL) -->
+<html lang="he" dir="rtl">
+<head>
+    <!-- UTF-8 לתמיכה מלאה בשפה העברית -->
+    <meta charset="UTF-8">
+    <!-- התאמה אוטומטית של האתר למסכי טלפון נייד ומחשב -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>HatimaPlus+ | פעולות אחרונות במערכת</title>
+
+    <!-- פתיחת חיבור לשרתי גוגל לפונט Rubik -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"> 
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ספריית אייקונים FontAwesome להצגת סמלים וכפתורים -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- ספריית הודעות מעוצבות SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- קובץ עיצוב הבסיס של המנהל (סייד-בר, טבלאות ופריסה) -->
+    <link rel="stylesheet" href="admin.css">
+    <!-- קובץ עיצוב ייעודי עבור יומן הפעולות -->
+    <link rel="stylesheet" href="admin-logs.css">
+</head>
+
+<body>
+
+    <!-- הקופסה שמחזיקה את כל הדף של המנהל -->
+    <div class="admin-container">
+
+        <!-- סרגל צדדי ימני של המנהל (Sidebar) -->
+        <aside class="sidebar">
+
+            <!-- אזור לוגו המערכת -->
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <img src="../../images/logo.png" alt="חתימה+ לוגו">
+                </div>
+            </div>
+
+            <!-- תפריט ניווט ראשי למנהל -->
+            <div class="menu-links">
+                <ul>
+                    <!-- פריט 1: ניהול משתמשי המערכת -->
+                    <li>
+                        <a href="admin.html" class="menu-item" id="menuUsers">
+                            <span class="menu-text">ניהול משתמשי המערכת</span>
+                        </a>
+                    </li>
+
+                    <!-- פריט 2: פעולות אחרונות במערכת (פעיל בדף זה) -->
+                    <li>
+                        <a href="admin-logs.html" class="menu-item active" id="menuLogs">
+                            <span class="menu-text">פעולות אחרונות במערכת</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- תחתית הסרגל: פרופיל מנהל וכפתור התנתקות -->
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="admin-avatar">
+                        <img src="../../images/svg/avatar_Profile.svg" alt="תמונת מנהל">
+                    </div>
+                    <div class="admin-details">
+                        <span class="admin-name" id="sidebarAdminName">מנהל מערכת</span>
+                        <span class="admin-status">
+                            <span class="online-dot"></span> מחובר כעת
+                        </span>
+                    </div>
+                    <button class="logout-btn" id="adminLogoutBtn" title="התנתקות">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- אזור התוכן הראשי של יומן הפעולות -->
+        <main class="main-content">
+
+            <!-- אזור כותרת הדף וכפתור רענון -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>פעולות אחרונות במערכת</h1>
+                    <p>מרכז מעקב ויומן פעולות (Audit Log) שנרשמו במערכת בזמן אמת, כולל עריכות ומחיקות של משתמשים.</p>
+                </div>
+
+                <!-- כפתור רענון נתוני היומן -->
+                <button class="btn-refresh" id="refreshBtn" title="רענן יומן פעולות">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+
+            <!-- פס סיכום וסטטיסטיקות פעולות רוחבי מעוצב -->
+            <div class="admin-stats-bar">
+
+                <!-- עמודה 1: סה״כ פעולות שנרשמו -->
+                <div class="stat-item">
+                    <span class="stat-title">סה״כ פעולות ביומן</span>
+                    <span class="stat-number" id="totalLogsCount">0</span>
+                </div>
+
+                <!-- קו מפריד אנכי -->
+                <div class="stat-divider"></div>
+
+                <!-- עמודה 2: פעולות עריכה -->
+                <div class="stat-item">
+                    <span class="stat-title">פעולות עריכה</span>
+                    <span class="stat-number stat-green" id="editLogsCount">0</span>
+                </div>
+
+                <!-- קו מפריד אנכי -->
+                <div class="stat-divider"></div>
+
+                <!-- עמודה 3: פעולות מחיקה -->
+                <div class="stat-item">
+                    <span class="stat-title">פעולות מחיקה</span>
+                    <span class="stat-number stat-orange" id="deleteLogsCount">0</span>
+                </div>
+
+                <!-- קו מפריד אנכי -->
+                <div class="stat-divider"></div>
+
+                <!-- עמודה 4: התחברויות מנהל -->
+                <div class="stat-item">
+                    <span class="stat-title">התחברויות למערכת</span>
+                    <span class="stat-number" id="loginLogsCount">0</span>
+                </div>
+
+            </div>
+
+            <!-- סרגל חיפוש מעוצב לסינון פעולות ביומן -->
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="חיפוש פעולה במערכת...">
+                </div>
+            </div>
+
+            <!-- קופסת הטבלה של יומן הפעולות -->
+            <div class="table-box">
+
+                <div class="table-header">
+                    <span class="table-title">יומן פעולות מנהל (admin_logs)</span>
+                    <span class="table-count" id="tableCountText">מציג 0 פעולות</span>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th># מזהה</th>
+                                <th>סוג פעולה</th>
+                                <th>פירוט הפעולה</th>
+                                <th>תאריך ושעה</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr>
+                                <td colspan="4" class="loading-text">
+                                    <i class="fa-solid fa-spinner fa-spin"></i>
+                                    <span>טוען נתונים ממסד הנתונים...</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </main>
+
+    </div> <!-- סגירת admin-container -->
+
+    <!-- קובץ הלוגיקה והנתונים של יומן הפעולות -->
+    <script src="admin-logs.js"></script>
+</body>
+</html>

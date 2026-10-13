@@ -10,11 +10,11 @@
         "projectUniqueName": "/Users/roni_levy/Documents/Roni_Project/server/server.csproj",
         "projectName": "server",
         "projectPath": "/Users/roni_levy/Documents/Roni_Project/server/server.csproj",
-        "packagesPath": "/tmp/.nuget/packages/",
+        "packagesPath": "/Users/roni_levy/.nuget/packages/",
         "outputPath": "/Users/roni_levy/Documents/Roni_Project/server/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/tmp/.nuget/NuGet/NuGet.Config"
+          "/Users/roni_levy/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net10.0"

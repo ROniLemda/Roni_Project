@@ -27,7 +27,8 @@ var app = builder.Build();
 
 void SetupCors(CorsPolicyBuilder policy)
 {
-    policy.AllowAnyOrigin();
+    // מאפשר גישה רק מהכתובות המורשות של האתר שלנו
+    policy.WithOrigins("http://127.0.0.1:5500", "http://localhost:5500");
     policy.AllowAnyMethod();
     policy.AllowAnyHeader();
 }
@@ -514,7 +515,242 @@ string LogoutUser(TokenCheck data)
     return "ההתנתקות מהמערכת בוצעה בהצלחה, נשמח לראותך שוב בקרוב";
 }
 
-//  פותח את דף הבית הראשי של השרת ומפעיל את הפונקציה למעלה כדי להציג את המשפט
+// פונקציה לשליפת כל המשתמשים עבור דף הניהול
+List<AdminUser> GetAdminUsers(string token = "")
+{
+    // יצירת רשימה שתחזיק את כל המשתמשים
+    List<AdminUser> usersList = new List<AdminUser>();
+
+    // בדיקת אבטחה: אם הטוקן אינו שייך למנהל מחזירים מיד רשימה ריקה
+    if (CheckIsAdmin(token) == false)
+    {
+        return usersList;
+    }
+
+    // פתיחת צינור התקשורת למסד הנתונים
+    using var connection = new NpgsqlConnection(databaseAddress);
+    connection.Open();
+
+    // משפט ה-SQL לשליפת כל העמודות מסודרות לפי ה-ID מהקטן לגדול
+    string sql = "SELECT id, full_name, username, email, password_hash, is_verified, reset_code_hash, reset_code_expires, auth_token, token_expires FROM users ORDER BY id ASC";
+    
+    using var command = new NpgsqlCommand(sql, connection);
+    using var reader = command.ExecuteReader();
+
+    // לולאה שעוברת שורה אחרי שורה במסד הנתונים
+    while (reader.Read())
+    {
+        // יצירת אובייקט משתמש חדש עבור השורה הנוכחית
+        AdminUser user = new AdminUser();
+
+        // מזהה משתמש
+        user.id = reader.GetInt32(0);
+
+        // שם מלא
+        if (reader.IsDBNull(1) == false)
+        {
+            user.full_name = reader.GetString(1);
+        }
+
+        // שם משתמש
+        if (reader.IsDBNull(2) == false)
+        {
+            user.username = reader.GetString(2);
+        }
+
+        // אימייל
+        if (reader.IsDBNull(3) == false)
+        {
+            user.email = reader.GetString(3);
+        }
+
+        // סיסמה מוצפנת
+        if (reader.IsDBNull(4) == false)
+        {
+            user.password_hash = reader.GetString(4);
+        }
+
+        // האם מאומת
+        if (reader.IsDBNull(5) == false)
+        {
+            user.is_verified = reader.GetBoolean(5);
+        }
+
+        // קוד אימות מוצפן (אם ריק נשאר ריק)
+        if (reader.IsDBNull(6) == false)
+        {
+            user.reset_code_hash = reader.GetString(6);
+        }
+
+        // תוקף קוד אימות (תאריך)
+        if (reader.IsDBNull(7) == false)
+        {
+            user.reset_code_expires = reader.GetDateTime(7).ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
+        // טוקן התחברות פעיל
+        if (reader.IsDBNull(8) == false)
+        {
+            user.auth_token = reader.GetString(8);
+        }
+
+        // תוקף טוקן התחברות
+        if (reader.IsDBNull(9) == false)
+        {
+            user.token_expires = reader.GetDateTime(9).ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
+        // הוספת המשתמש לרשימה
+        usersList.Add(user);
+    }
+
+    // החזרת הרשימה המלאה למי שקרא לפונקציה
+    return usersList;
+}
+
+// פונקציה למחיקת משתמש ממסד הנתונים לפי ID
+string DeleteAdminUser(DeleteUserRequest data)
+{
+    // בדיקת אבטחה אם הטוקן אינו שייך למנהל חוסמים את הפעולה
+    if (CheckIsAdmin(data.Token) == false)
+    {
+        return "גישה נדחתה, אין לך את ההרשאות המתאימות לביצוע הפעולה המבוקשת.";
+    }
+
+    // פתיחת צינור התקשורת למסד הנתונים
+    using var connection = new NpgsqlConnection(databaseAddress);
+    connection.Open();
+
+    // משפט SQL למחיקת השורה שה id שלה תואם
+    string sql = "DELETE FROM users WHERE id = @id";
+    using var command = new NpgsqlCommand(sql, connection);
+    command.Parameters.AddWithValue("@id", data.Id);
+
+    // ביצוע הפקודה במסד הנתונים
+    command.ExecuteNonQuery();
+
+    // שמירת פעולת המחיקה ביומן הפעולות של המערכת
+    SaveAdminLog("מחיקת משתמש", "נמחק חשבון משתמש מהמערכת (ID: " + data.Id + ")");
+
+    return "חשבון המשתמש הוסר בהצלחה מהמערכת וכל הנתונים הקשורים אליו נמחקו.";
+}
+
+// פונקציה לעדכון פרטי משתמש במסד הנתונים
+string UpdateAdminUser(UpdateAdminUserRequest data)
+{
+    // בדיקת אבטחה אם הטוקן אינו שייך למנהל חוסמים את הפעולה
+    if (CheckIsAdmin(data.Token) == false)
+    {
+        return "גישה נדחתה, אין לך את ההרשאות המתאימות לביצוע הפעולה המבוקשת.";
+    }
+
+    // פתיחת צינור התקשורת למסד הנתונים
+    using var connection = new NpgsqlConnection(databaseAddress);
+    connection.Open();
+
+    // משפט SQL לעדכון השדות לפי ה-ID של המשתמש
+    string sql = "UPDATE users SET full_name = @name, username = @user, email = @email WHERE id = @id";
+    using var command = new NpgsqlCommand(sql, connection);
+    command.Parameters.AddWithValue("@id", data.Id);
+    command.Parameters.AddWithValue("@name", data.Full_name);
+    command.Parameters.AddWithValue("@user", data.Username);
+    command.Parameters.AddWithValue("@email", data.Email);
+
+    // ביצוע פקודת העדכון במסד הנתונים
+    command.ExecuteNonQuery();
+
+    // שמירת פעולת העריכה ביומן הפעולות של המערכת
+    SaveAdminLog("עריכת משתמש", "נערכו פרטי משתמש (ID: " + data.Id + ") שם: " + data.Full_name);
+
+    return " פרטי החשבון עודכנו, כלל השינויים שבוצעו ברשומת המשתמש נשמרו בהצלחה";
+}
+
+// פונקציה לשמירת שורת פעולה חדשה ביומן המנהל במסד הנתונים
+void SaveAdminLog(string actionType, string details)
+{
+    // פתיחת צינור תקשורת מול מסד הנתונים
+    using var connection = new NpgsqlConnection(databaseAddress);
+    connection.Open();
+
+    // פקודת SQL להכנסת שורה חדשה לטבלת admin_logs
+    // התאריך נכנס לבד אוטומטית
+    string sql = "INSERT INTO admin_logs (action_type, details) VALUES (@type, @details)";
+    using var command = new NpgsqlCommand(sql, connection);
+
+    command.Parameters.AddWithValue("@type", actionType);
+    command.Parameters.AddWithValue("@details", details);
+
+    // הרצת הפקודה ושמירת השורה בפועל
+    command.ExecuteNonQuery();
+}
+
+// פונקציה לשליפת יומן הפעולות האחרונות ממסד הנתונים
+List<AdminLogItem> GetAdminLogs(string token = "")
+{
+    // רשימה ריקה שנמלא ונחזיר
+    var list = new List<AdminLogItem>();
+
+    // בדיקת אבטחה אם הטוקן אינו שייך למנהל מחזירים רשימה ריקה
+    if (CheckIsAdmin(token) == false)
+    {
+        return list;
+    }
+
+    // פתיחת צינור התקשורת מסד הנתונים
+    using var connection = new NpgsqlConnection(databaseAddress);
+    connection.Open();
+
+    // שולף את הפעולות מהחדשה ביותר לישנה ביותר (ORDER BY id DESC)
+    string sql = "SELECT id, action_type, details, created_at FROM admin_logs ORDER BY id DESC LIMIT 100";
+    using var command = new NpgsqlCommand(sql, connection);
+    using var reader = command.ExecuteReader(); // מריץ 
+
+    // לולאה שעוברת שורה שורה וממלאת את הרשימה
+    while (reader.Read())
+    {
+        var item = new AdminLogItem();
+        item.id = reader.GetInt32(0);
+        item.action_type = reader.GetString(1);
+        item.details = reader.GetString(2);
+        item.created_at = reader.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
+
+        list.Add(item);
+    }
+
+    return list;
+}
+
+// פונקציית אבטחה שמוודאת שהטוקן שייך למנהל
+bool CheckIsAdmin(string token)
+{
+    // אם לא נשלח טוקן
+    if (token == "")
+    {
+        return false;
+    }
+
+    // בדיקה במסד הנתונים האם הטוקן קיים בתוקף ושייך למנהל
+    using var connection = new NpgsqlConnection(databaseAddress);
+    connection.Open();  
+
+    string sql = "SELECT is_admin FROM users WHERE auth_token = @token AND token_expires > NOW()";
+    using var command = new NpgsqlCommand(sql, connection);
+    command.Parameters.AddWithValue("@token", token);
+
+    using var reader = command.ExecuteReader();
+    
+    // אם לא נמצא משתמש כזה
+    if (reader.Read() == false)
+    {
+        return false;
+    }
+    // מחזיר האם הוא מנהל (true או false)
+    return reader.GetBoolean(0) == true;
+}
+
+
+
+{}//  פותח את דף הבית הראשי של השרת ומפעיל את הפונקציה למעלה כדי להציג את המשפט
 app.MapGet("/", GetStatus); 
 
 app.MapPost("/api/register", RegisterUser); // מחבר את פונקציית ה-RegisterUser 
@@ -534,6 +770,15 @@ app.MapPost("/api/resend-code", ResendCode); // מחבר את פונקציית �
 app.MapPost("/api/verify-token", VerifyToken); // מחבר את פונקציית אימות הטוקן לדשבורד
 
 app.MapPost("/api/logout", LogoutUser); // מחבר את פונקציית ההתנתקות המאובטחת
+
+app.MapGet("/api/admin/users", GetAdminUsers);
+
+app.MapPost("/api/admin/delete-user", DeleteAdminUser); 
+
+app.MapPost("/api/admin/update-user", UpdateAdminUser); 
+
+app.MapGet("/api/admin/logs", GetAdminLogs); 
+
 
 app.Run(); // מפעיל את השרת כדי שיתחיל להקשיב בלייב לבקשות של האתר
 
@@ -613,4 +858,45 @@ class ResendCodeRequest
 class TokenCheck
 {
     public string Token { get; set; } = "";
+}
+
+// מחלקה שמייצגת משתמש עבור דף המנהל
+class AdminUser
+{
+    public int id { get; set; }
+    public string full_name { get; set; } = "";
+    public string username { get; set; } = "";
+    public string email { get; set; } = "";
+    public string password_hash { get; set; } = "";
+    public bool is_verified { get; set; }
+    public string reset_code_hash { get; set; } = "";
+    public string reset_code_expires { get; set; } = "";
+    public string auth_token { get; set; } = "";
+    public string token_expires { get; set; } = "";
+    }
+
+// מחלקה לקליטת מזהה משתמש לצורך מחיקה
+class DeleteUserRequest
+{
+    public int Id { get; set; }
+    public string Token { get; set; } = "";
+}
+
+// מחלקה לקליטת נתוני עדכון משתמש מדף הניהול
+class UpdateAdminUserRequest
+{
+    public int Id { get; set; }
+    public string Full_name { get; set; } = "";
+    public string Username { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string Token { get; set; } = "";
+}
+
+// מחלקה שמייצגת שורת פעולה ביומן עבור דף המנהל
+class AdminLogItem
+{
+    public int id { get; set; }
+    public string action_type { get; set; } = "";
+    public string details { get; set; } = "";
+    public string created_at { get; set; } = "";
 }

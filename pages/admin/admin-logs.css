@@ -1,0 +1,53 @@
+/* ==========================================================================
+   קובץ עיצוב ייעודי עבור דף פעולות אחרונות במערכת (admin-logs.css)
+   הקובץ מרחיב את admin.css ומוסיף עיצובים ייעודיים לטבלת יומן הפעולות
+   ========================================================================== */
+
+/* עיצוב כללי של תגיות סוג פעולה ביומן */
+.log-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+/* תגית פעולת עריכה (כחול) */
+.badge-action-edit {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+/* תגית פעולת מחיקה (אדום) */
+.badge-action-delete {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+/* תגית פעולת התחברות (ירוק) */
+.badge-action-login {
+    background-color: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+/* עיצוב עמודת הפירוט של הפעולה */
+.log-details-text {
+    font-size: 13.5px;
+    color: var(--color-dark);
+    font-weight: 500;
+}
+
+/* עיצוב תאריך ושעה ביומן */
+.log-time-text {
+    font-family: 'Rubik', sans-serif;
+    direction: ltr;
+    display: inline-block;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 500;
+}

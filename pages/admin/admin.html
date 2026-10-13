@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<!-- הגדרת שפה לעברית וכיוון קריאה מימין לשמאל (RTL) -->
+<html lang="he" dir="rtl">
+<head>
+    <!-- UTF-8 לתמיכה מלאה בשפה העברית -->
+    <meta charset="UTF-8">
+    <!-- התאמה אוטומטית של האתר למסכי טלפון נייד ומחשב -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>HatimaPlus+ | Admin Dashboard</title>
+
+    <!-- בדיקת אבטחה ישר אם אין טוקן התחברות זורק מיד לדף ההתחברות 
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (token === null || token === '') 
+        {
+            window.location.replace('../login.html');
+        }
+    </script> -->
+
+    <!-- פתיחת חיבור לשרתי גוגל -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"> 
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ספריית אייקונים FontAwesome להצגת סמלים וכפתורים -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- ספריית הודעות מעוצבות SweetAlert2 לחלונות אישור ומחיקה מעוצבים -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- קובץ עיצוב ייעודי עבור דף המנהל -->
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+
+    <!-- הקופסה שמחזיקה את כל הדף של המנהל -->
+    <div class="admin-container">
+
+        <!-- סרגל צדדי ימני של המנהל (Sidebar) -->
+        <aside class="sidebar">
+
+            <!-- אזור לוגו המערכת -->
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <img src="../../images/logo.png" alt="חתימה+ לוגו">
+                </div>
+            </div>
+
+            <!-- תפריט ניווט ראשי למנהל -->
+            <div class="menu-links">
+                <ul>
+                    <!-- פריט 1: ניהול משתמשי המערכת (פעיל) -->
+                    <li>
+                        <a href="admin.html" class="menu-item active" id="menuUsers">
+                            <span class="menu-text">ניהול משתמשי המערכת</span>
+                        </a>
+                    </li>
+
+                    <!-- פריט 2: פעולות אחרונות במערכת -->
+                    <li>
+                        <a href="admin-logs.html" class="menu-item" id="menuLogs">
+                            <span class="menu-text">פעולות אחרונות במערכת</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- תחתית הסרגל: פרופיל מנהל והתנתקות -->
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="admin-avatar">
+                        <img src="../../images/svg/avatar_Profile.svg" alt="תמונת מנהל">
+                    </div>
+                    <div class="admin-details">
+                        <span class="admin-name" id="sidebarAdminName">מנהל מערכת</span>
+                        <span class="admin-status">
+                            <span class="online-dot"></span> מחובר כעת
+                        </span>
+                    </div>
+                    <button class="logout-btn" id="adminLogoutBtn" title="התנתקות">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- אזור התוכן הראשי של המנהל -->
+        <main class="main-content">
+
+            <!-- אזור כותרת הדף וכפתור רענון -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1 id="welcomeTitle">ברוך שובך, Roni Levy</h1>
+                    <p id="welcomeDesc">ברוך הבא לממשק הניהול של חתימה+. כאן תוכל לבצע צפייה וניהול של מאגר המשתמשים, כולל אפשרות לחיפוש ומחיקת חשבונות מהמערכת.</p>
+                </div>
+
+                <!-- כפתור רענון נתונים מהיר מול מסד הנתונים -->
+                <button class="btn-refresh" id="refreshBtn" title="רענן נתונים">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+
+            <!-- פס סיכום ופרופיל מנהל רוחבי מעוצב -->
+            <div class="admin-stats-bar">
+
+                <!-- עמודה: פעולה אחרונה שבוצעה במערכת -->
+                <div class="stat-item stat-activity-item">
+                    <span class="stat-title">פעולה אחרונה בחשבון</span>
+                    <span class="stat-value-text" id="lastActivityText">-</span>
+                </div>
+
+                <!-- קו מפריד אנכי -->
+                <div class="stat-divider"></div>
+
+                <!-- עמודה 1 סה״כ משתמשים -->
+                <div class="stat-item">
+                    <span class="stat-title">סה״כ משתמשים</span>
+                    <span class="stat-number" id="totalUsersCount">0</span>
+                </div>
+
+                <!-- קו מפריד אנכי -->
+                <div class="stat-divider"></div>
+
+                <!-- עמודה 2 משתמשים מאומתים -->
+                <div class="stat-item">
+                    <span class="stat-title">חשבונות מאומתים</span>
+                    <span class="stat-number stat-green" id="verifiedUsersCount">0</span>
+                </div>
+
+                <!-- קו מפריד אנכי -->
+                <div class="stat-divider"></div>
+
+                <!-- עמודה 3 ממתינים לאימות -->
+                <div class="stat-item">
+                    <span class="stat-title">ממתינים לאימות</span>
+                    <span class="stat-number stat-orange" id="pendingUsersCount">0</span>
+                </div>
+
+            </div>
+
+            <!-- סרגל חיפוש מעוצב עם אפקט הקלדה ואייקון זכוכית מגדלת -->
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="חיפוש משתמש במערכת...">
+                </div>
+            </div>
+
+            <!-- קופסת הטבלה המלאה (כמו ב-DataGrip) -->
+            <div class="table-box">
+
+                <div class="table-header">
+                    <span class="table-title">טבלת משתמשים מלאה (PostgreSQL: users)</span>
+                    <span class="table-count" id="tableCountText">מציג 0 משתמשים</span>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th># ID</th>
+                                <th>שם מלא</th>
+                                <th>שם משתמש</th>
+                                <th>אימייל</th>
+                                <th>סיסמה מוצפנת (Hash)</th>
+                                <th>סטטוס אימות</th>
+                                <th>קוד אימות מוצפן</th>
+                                <th>תוקף קוד</th>
+                                <th>טוקן פעיל (Auth Token)</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="10" class="loading-text">
+                                    <i class="fa-solid fa-spinner fa-spin"></i>
+                                    <span>טוען נתונים ממסד הנתונים...</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </main>
+
+    </div> <!-- סגירת admin-container -->
+
+    <!-- קובץ הלוגיקה והנתונים של דף המנהל -->
+    <script src="admin.js"></script>
+</body>
+</html>

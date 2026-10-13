@@ -1,0 +1,623 @@
+/* פלטת הצבעים הרשמית של מערכת חתימה+ */
+:root {
+    --color-blue: #0a4ade;          /* כחול מיתוגי רשמי */
+    --color-bg: #f8fafc;            /* רקע עבודה אפרפר בהיר ורך */
+    --color-dark: #0f172a;          /* שחור פחם עמוק לטקסט חד */
+    --color-white: #ffffff;         /* לבן נקי לקופסאות וכרטיסיות */
+    --color-border: #e2e8f0;        /* קווי הפרדה עדינים */
+    --color-gray: #64748b;          /* אפור משני לפסקאות ואייקונים */
+    --color-danger: #ef4444;        /* אדום להתנתקות ומחיקה */
+}
+
+/* איפוס הגדרות בסיס ופונט Rubik */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Rubik', sans-serif;
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-dark);
+    direction: rtl; /* יישור מימין לשמאל לשפה העברית */
+    min-height: 100vh;
+}
+
+/* הקופסה הראשית שמחזיקה את כל דף המנהל (סייד-בר בצד ימין ותוכן משמאל) */
+.admin-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: row;
+}
+
+/* סרגל צדדי ימני של המנהל (Sidebar) */
+.sidebar {
+    width: 290px;
+    background-color: var(--color-white);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    border-left: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+/* אזור לוגו המערכת בראש הסרגל */
+.sidebar-header {
+    height: 89px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* תיבת הרקע של הלוגו */
+.logo-box {
+    width: 100%;
+    height: 48px;
+    padding: 6px 18px;
+    background-color: var(--color-blue);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(10, 74, 222, 0.15);
+}
+
+.logo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(1.35);
+}
+
+/* תפריט ניווט ראשי למנהל */
+.menu-links {
+    padding: 24px 16px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.menu-links ul {
+    list-style: none;
+}
+
+.menu-links li {
+    margin-bottom: 14px;
+}
+
+/* כפתור פריט בתפריט */
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-dark);
+    transition: all 0.2s ease;
+}
+
+.menu-icon {
+    font-size: 20px;
+    color: #64748b;
+    transition: color 0.2s ease;
+}
+
+.menu-text {
+    flex: 1;
+}
+
+.menu-item:hover {
+    background-color: #f1f5f9;
+    color: var(--color-blue);
+}
+
+.menu-item:hover .menu-icon {
+    color: var(--color-blue);
+}
+
+/* פריט תפריט פעיל */
+.menu-item.active {
+    background-color: #e8effd;
+    color: var(--color-blue);
+    font-weight: 600;
+}
+
+.menu-item.active .menu-icon {
+    color: var(--color-blue);
+}
+
+/* תחתית הסרגל: פרופיל מנהל והתנתקות */
+.sidebar-footer {
+    padding: 14px 16px;
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-white);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* כפתור התנתקות בפוטר */
+.logout-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 6px;
+    border-radius: 8px;
+    transition: 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.logout-btn:hover {
+    color: #ffffff;
+    background-color: #ef4444;
+}
+
+/* אזור התוכן המרכזי של הדף */
+.main-content {
+    flex: 1;
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    overflow-y: auto;
+    height: 100vh;
+}
+
+/* אזור כותרת הדף וכפתור רענון */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+/* טקסט הברכה והכותרת */
+.page-title h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--color-dark);
+    margin-bottom: 6px;
+}
+
+.page-title p {
+    font-size: 15px;
+    color: var(--color-gray);
+    line-height: 1.5;
+}
+
+/* כפתור רענון נתונים */
+.btn-refresh {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 20px;
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    color: var(--color-dark);
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s ease;
+}
+
+.btn-refresh:hover {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(10, 74, 222, 0.12);
+}
+
+.btn-refresh i {
+    font-size: 14px;
+    transition: transform 0.4s ease;
+}
+
+.btn-refresh:hover i {
+    transform: rotate(180deg); /* סיבוב קל של האייקון בריחוף */
+}
+
+/* פס סיכום ופרופיל מנהל רוחבי מעוצב (כרטיסייה רוחבית מאוחדת) */
+.admin-stats-bar {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    gap: 16px;
+}
+
+/* פרטי המנהל בתחתית הסרגל (שם וסטטוס מחובר) */
+.admin-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.admin-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--color-dark);
+}
+
+.admin-status {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* נקודת אינדיקציה ירוקה מונפשת למחובר כעת */
+.online-dot {
+    width: 7.5px;
+    height: 7.5px;
+    border-radius: 50%;
+    background-color: #10b981;
+    display: inline-block;
+    box-shadow: 0 0 0 2.5px rgba(16, 185, 129, 0.2);
+}
+
+/* תמונת אוואטר עגולה */
+.admin-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #e2e8f0;
+    background-color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.admin-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* קו מפריד אנכי ואלגנטי בין העמודות */
+.stat-divider {
+    width: 1px;
+    height: 44px;
+    background-color: #e2e8f0;
+    flex-shrink: 0;
+}
+
+/* עמודת נתון יחיד (כותרת ומספר גדול) */
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    text-align: center;
+}
+
+/* עמודת פעילות אחרונה בחשבון */
+.stat-activity-item {
+    flex: 1.4;
+    align-items: center;
+}
+
+.stat-value-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-dark);
+    letter-spacing: -0.2px;
+}
+
+.stat-title {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--color-gray);
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-blue);
+    letter-spacing: -0.5px;
+}
+
+/* צבע ירוק לחשבונות מאומתים */
+.stat-green {
+    color: #10b981;
+}
+
+/* צבע כתום לחשבונות הממתינים לאימות */
+.stat-orange {
+    color: #f59e0b;
+}
+
+/* מיכל שורת החיפוש */
+.search-container {
+    width: 100%;
+}
+
+/* תיבת החיפוש המעוגלת (Pill Shape) */
+.search-box {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    background-color: var(--color-white);
+    border: 1.5px solid var(--color-border);
+    border-radius: 50px; /* פינות מעוגלות לחלוטין כמו בתמונה ששלחת */
+    padding: 4px 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    transition: all 0.25s ease;
+}
+
+/* ריחוף עכבר מעל תיבת החיפוש */
+.search-box:hover {
+    border-color: #cbd5e1;
+}
+
+/* מצב שבו המשתמש לוחץ על שורת החיפוש (Focus) */
+.search-box:focus-within {
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 4px rgba(10, 74, 222, 0.12); /* זוהר כחול עדין מסביב */
+}
+
+/* אייקון זכוכית מגדלת בתוך החיפוש */
+.search-icon {
+    font-size: 17px;
+    color: #94a3b8;
+    margin-left: 12px;
+    transition: color 0.2s ease;
+}
+
+.search-box:focus-within .search-icon {
+    color: var(--color-blue); /* האייקון נצבע בכחול כשלוחצים להקליד */
+}
+
+/* שדה הקלט של החיפוש */
+.search-box input,
+#searchInput {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 12px 0;
+    font-size: 15px;
+    color: var(--color-dark);
+}
+
+/* עיצוב הטקסט המקדים (Placeholder) */
+.search-box input::placeholder,
+#searchInput::placeholder {
+    color: #94a3b8;
+    transition: opacity 0.3s ease;
+}
+
+/* קופסת הטבלה הראשית */
+.table-box {
+    background-color: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+/* כותרת הטבלה וספירת המשתמשים */
+.table-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8fafc;
+}
+
+.table-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-dark);
+}
+
+.table-count {
+    font-size: 13.5px;
+    color: var(--color-gray);
+    font-weight: 500;
+}
+
+/* מעטפת גלילה אופקית לטבלה */
+.table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+/* עיצוב הטבלה */
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+    font-size: 13.5px;
+}
+
+.users-table th {
+    padding: 14px 18px;
+    background-color: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    font-size: 13px;
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+
+.users-table td {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--color-dark);
+    white-space: nowrap;
+    font-size: 13.5px;
+}
+
+.users-table tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* תגית סטטוס אימות */
+.badge-verified {
+    display: inline-block;
+    padding: 4px 10px;
+    background-color: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-pending {
+    display: inline-block;
+    padding: 4px 10px;
+    background-color: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* טקסט קודים מוצפנים (Hash וטוקנים) ששובר שורה יפה ולא נמרח לרוחב */
+.hash-text {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: #475569;
+    background-color: #f1f5f9;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    max-width: 220px;
+    word-break: break-all;      /* שובר את המחרוזת הארוכה ומוריד שורה */
+    white-space: normal;        /* מאפשר שבירת שורות ולא שומר בקו אחד */
+    display: inline-block;
+    direction: ltr;             /* אותיות באנגלית מוצגות משמאל לימין בצורה נקייה */
+    text-align: left;
+}
+
+/* כפתורי פעולה בטבלה (מחיקה ועריכה) */
+.action-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-table-action {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* כפתור עריכה - רקע תכלת עדין ומודרני */
+.btn-edit {
+    color: var(--color-blue);
+    background-color: #eff6ff;
+    border-color: #dbeafe;
+}
+
+.btn-edit:hover {
+    background-color: var(--color-blue);
+    border-color: var(--color-blue);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(10, 74, 222, 0.25);
+}
+
+/* כפתור מחיקה - רקע אדמדם עדין ומודרני */
+.btn-delete {
+    color: #ef4444;
+    background-color: #fef2f2;
+    border-color: #fee2e2;
+}
+
+.btn-delete:hover {
+    background-color: #ef4444;
+    border-color: #ef4444;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+}
+
+/* שורת טעינה */
+.loading-text {
+    text-align: center;
+    padding: 40px !important;
+    color: #64748b;
+    font-size: 15px;
+}
+
+/* עיצוב מודרני ונקי לטופס העריכה (SweetAlert2) */
+.edit-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 14px;
+    text-align: right;
+    direction: rtl;
+}
+
+.edit-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.edit-form-group label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.edit-modal-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 9px;
+    font-size: 14px;
+    color: var(--color-dark);
+    background-color: #f8fafc;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.edit-modal-input:focus {
+    background-color: #ffffff;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(10, 74, 222, 0.12);
+}

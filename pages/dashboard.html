@@ -60,60 +60,143 @@
                     <!-- כפתור 1 לוח בקרה -->
                     <li>
                         <a href="#" class="menu-item active" data-page="dashboard">
-                            <img src="../svg/Dashboard.svg" alt="לוח בקרה" class="menu-icon-img">
-                            <span>לוח בקרה</span>
+                            <img src="../images/svg/Dashboard.svg" alt="לוח בקרה" class="menu-icon-img">
+                            <span class="menu-text">לוח בקרה</span>
+                            <i class="fa-solid fa-chevron-left menu-arrow"></i>
                         </a>
                     </li>
 
                     <!-- כפתור 2 מסמכים -->
                     <li>
-                        <a href="#" class="menu-item" data-page="documents">
-                            <img src="../svg/browser.svg" alt="מסמכים" class="menu-icon-img">
-                            <span>ניהול מסמכים</span>
+                        <a href="#" class="menu-item" id="menuDocs" data-page="documents">
+                            <img src="../images/svg/browser.svg" alt="מסמכים" class="menu-icon-img">
+                            <span class="menu-text">ניהול מסמכים</span>
+                            <i class="fa-solid fa-chevron-left menu-arrow"></i>
                         </a>
+
+                      <!-- פאנל תת-תפריט נשלף עבור מסמכים (מופיע בצמוד לסרגל הצדדי) -->
+                    <aside class="document-panel" id="documentPanel">
+            
+                    <!-- כותרת ראשית של תת התפריט -->
+                    <div class="document-header">
+                       <h3>מסמכים בתהליך</h3>
+                     </div>
+
+                     <!-- רשימת הפריטים -->
+                     <ul class="document-list">
+                    <li><a href="#" class="document-item active">כל המסמכים</a></li>
+                    <li><a href="#" class="document-item">מסמכים שנשלחו</a></li>
+                    <li><a href="#" class="document-item">ממתין לטיפול</a></li>
+                    <li><a href="#" class="document-item">נחתמו בהצלחה</a></li>
+                    <li><a href="#" class="document-item">טיוטות</a></li>
+
+                     <!-- קו הפרדה -->
+                    <li class="document-divider"></li>        
+                
+                     <li>
+                        <a href="#" class="document-item trash-item">
+                            <i class="fa-regular fa-trash-can"></i>
+                            <span>ארכיון סל מיחזור</span>
+                        </a>
+                     </li>
+                    </ul>
+                     </aside>
+                </li>
+
+                     <!-- כפתור 3 דוחות -->
+                    <li>
+                        <a href="#" class="menu-item" id="menuReports" data-page="reports">
+                            <img src="../images/svg/report.svg" alt="דוחות" class="menu-icon-img">
+                            <span class="menu-text">דוחות וסטטיסטיקה</span>
+                            <i class="fa-solid fa-chevron-left menu-arrow"></i>
+                        </a>
+
+                        <!-- פאנל תת תפריט עבור דוחות וסטטיסטיקה -->
+                        <aside class="reports-panel" id="reportsPanel">
+                            
+                            <!-- כותרת ראשית של תת התפריט -->
+                            <div class="document-header">
+                                <h3>דוחות וניתוח נתונים</h3>
+                            </div>
+
+                            <!-- רשימת הפריטים -->
+                            <ul class="document-list">
+                                <li><a href="#" class="document-item">דוח פעילות חודשי</a></li>
+                                <li><a href="#" class="document-item">דוח חתימות ומסמכים</a></li>
+                                <li><a href="#" class="document-item">דוח ביקורת ואבטחה</a></li>
+
+                                <!-- קו הפרדה -->
+                                <li class="document-divider"></li>
+
+                                <li><a href="#" class="document-item">ייצוא נתונים לExcel / PDF</a></li>
+                            </ul>
+
+                        </aside>
                     </li>
 
-                    <!-- כפתור 3 דוחות -->
+                    <!-- כפתור 4 מורשי חתימה ותעודות דיגיטליות -->
                     <li>
-                        <a href="#" class="menu-item" data-page="reports">
-                            <img src="../svg/report.svg" alt="דוחות" class="menu-icon-img">
-                            <span>דוחות וסטטיסטיקה</span>
+                        <a href="#" class="menu-item" id="menuSigners" data-page="signers">
+                            <img src="../images/svg/authorized_user.svg" alt="מורשי חתימה" class="menu-icon-img">
+                            <span class="menu-text">חותמים ואנשי קשר מורשים</span>
+                            <i class="fa-solid fa-chevron-left menu-arrow"></i>
                         </a>
+
+                        <!-- פאנל תת תפריט עבור חותמים ואנשי קשר -->
+                        <aside class="signers-panel" id="signersPanel">
+                            
+                            <!-- כותרת ראשית של תת התפריט -->
+                            <div class="document-header">
+                                <h3>ניהול חותמים והרשאות</h3>
+                            </div>
+
+                            <!-- רשימת הפריטים -->
+                            <ul class="document-list">
+                                <li><a href="#" class="document-item">אנשי קשר וחותמים מורשים</a></li>
+                                <li><a href="#" class="document-item">אישורי גישה ומשתמשים חדשים</a></li>
+                                <li><a href="#" class="document-item">היסטוריית פעילות חותמים</a></li>
+                            </ul>
+
+                        </aside>
                     </li>
 
-                    <!-- כפתור 4 משימות -->
+                    <!-- כפתור 5 פעולות נדרשות -->
                     <li>
-                        <a href="#" class="menu-item" data-page="tasks">
-                            <img src="../svg/success.svg" alt="משימות" class="menu-icon-img">
-                            <span>פעולות נדרשות</span>
+                        <a href="#" class="menu-item" id="menuTasks" data-page="tasks">
+                            <img src="../images/svg/success.svg" alt="משימות" class="menu-icon-img">
+                            <span class="menu-text">פעולות נדרשות</span>
+                            <i class="fa-solid fa-chevron-left menu-arrow"></i>
                         </a>
-                    </li>   
 
-                    <!-- כפתור 5 מורשי חתימה ותעודות דיגיטליות -->
-                    <li>
-                        <a href="#" class="menu-item" data-page="signers">
-                            <img src="../svg/authorized_user.svg" alt="מורשי חתימה" class="menu-icon-img">
-                            <span>חותמים ואנשי קשר מורשים</span>
-                        </a>
+                        <!-- פאנל תת תפריט עבור פעולות נדרשות -->
+                        <aside class="tasks-panel" id="tasksPanel">
+                            
+                            <!-- כותרת ראשית של תת התפריט -->
+                            <div class="document-header">
+                                <h3>משימות ופעולות לטיפול</h3>
+                            </div>
+
+                            <!-- רשימת הפריטים -->
+                            <ul class="document-list">
+                                <li><a href="#" class="document-item">מסמכים הממתינים לחתימתך</a></li>
+                                <li><a href="#" class="document-item">תזכורות לחותמים</a></li>
+                                <li><a href="#" class="document-item">טיפול במסמכים שנדחו</a></li>
+                                <li><a href="#" class="document-item">תוקף מסמכים העומד לפוג</a></li>
+                            </ul>
+
+                        </aside>
                     </li>
 
-                    <!-- כפתור 6 הגדרות מערכת -->
-                    <li>
-                        <a href="#" class="menu-item" data-page="settings">
-                            <img src="../svg/settings.svg" alt="הגדרות מערכת" class="menu-icon-img">
-                            <span>הגדרות</span>
-                        </a>
-                    </li>
                 </ul>
             </div>
 
-            <!-- אזור תחתון בסרגל פרטי המשתמש המחובר וכפתור התנתקות -->
+            <!-- אזור תחתון בסרגל: פרטי המשתמש המחובר, כפתור הגדרות וכפתור התנתקות -->
             <div class="sidebar-footer">
                 <div class="user-profile">
                     <!-- תמונת פרופיל / אוואטר SVG מתיקיית svg -->
                     <div class="user-avatar" id="userAvatar">
-                        <img src="../svg/Profile.svg" alt="תמונת פרופיל" class="avatar-img">
-                    </div>
+                        <img src="../images/svg/profile.svg" alt="תמונת פרופיל" class="avatar-img">
+                    </div>  
 
                     <!-- שם ואימייל של המשתמש שימולאו אוטומטית מ-localStorage -->
                     <div class="user-info">
@@ -121,15 +204,117 @@
                         <span class="user-email" id="userEmailDisplay">טוען נתונים...</span>
                     </div>
 
-                    <!-- כפתור יציאה / התנתקות מהמערכת -->
-                    <button class="logout-btn" id="logoutBtn" title="התנתקות מהמערכת">
-                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                    </button>
+                    <!-- כפתורי פעולה בפוטר: הגדרות (גלגל שיניים) והתנתקות -->
+                    <div class="footer-actions">
+                        <!-- כפתור הגדרות מערכת עם אייקון גלגל שיניים FontAwesome -->
+                        <button class="footer-action-btn" id="settingsBtn" title="הגדרות">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+
+                        <!-- כפתור יציאה / התנתקות מהמערכת -->
+                        <button class="footer-action-btn logout-btn" id="logoutBtn" title="התנתקות מהמערכת">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        </button>
+                    </div>
                 </div>
 
-            </div>
+            </div>    
 
         </aside>
+
+        <!-- אזור התוכן המרכזי של הדשבורד (לצד סרגל הצד הימני) -->
+        <main class="main-content">
+
+            <!-- פס עליון (Top Bar) אחיד לרוחב כל המסך -->
+            <header class="top-bar">
+                <!-- צד ימין של הטופ בר (נשאר נקי/ריק כרגע עבור כותרת או חיפוש עתידי) -->
+                <div class="top-bar-right"></div>
+
+                <!-- צד שמאל של הטופ בר: 3 כפתורי פעולה (עזרה, פעמון התראות, פרופיל אישי) -->
+                <div class="top-bar-actions">
+                    <!--  כפתור מרכז עזרה (?) -->
+                    <button class="top-icon-btn" id="helpCenterBtn" title="מרכז עזרה">
+                        <i class="fa-regular fa-circle-question"></i>
+                    </button>
+
+                    <!-- כפתור התראות (פעמון) -->
+                    <button class="top-icon-btn" id="notificationsBtn" title="התראות">
+                        <i class="fa-regular fa-bell"></i>
+                    </button>
+
+                    <!-- 3. אזור פרופיל אישי: שם המשתמש ותמונת אוואטר SVG -->
+                    <div class="top-profile-container" id="topProfileContainer" title="פרופיל אישי">
+                        <span class="top-user-name" id="topUserNameDisplay">משתמש מחובר</span>
+                        <div class="top-avatar-box">
+                            <img src="../images/svg/profile_topbar.svg" alt="פרופיל אישי" class="top-avatar-img">
+                        </div>
+
+                        <!-- תפריט משתמש שנפתח בלחיצה -->
+                        <div class="user-box" id="userBox">
+                            <!-- תמונת באנר עליונה לפרופיל -->
+                            <div class="user-box-banner">
+                                <img src="../images/svg/banner_profile.svg" alt="באנר פרופיל" class="box-banner-img">
+                            </div>
+
+                            <!-- חלק עליון: שם ומייל -->
+                            <div class="user-box-header">
+                                <span class="box-name" id="boxName">משתמש מחובר</span>
+                                <span class="box-email" id="boxEmail">טוען מייל...</span>
+                            </div>
+
+                            <!-- רשימת אפשרויות (טקסט נקי, אייקון רק להתנתקות) -->
+                            <ul class="user-box-list">
+                                <li>
+                                    <a href="#" class="user-box-item">
+                                        <span>הגדרות חשבון ופרופיל</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="user-box-item">
+                                        <span>החתימה הדיגיטלית שלי</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="user-box-item">
+                                        <span>אבטחה ואימות דו שלבי</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="user-box-item">
+                                        <span>הגדרות נגישות</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#" class="user-box-item">
+                                        <span>הגדרות מערכת</span>
+                                    </a>
+                                </li>
+
+                                <!-- קו הפרדה -->
+                                <li class="user-box-line"></li>
+
+                                <li>
+                                    <a href="#" class="user-box-item box-logout" id="topLogoutBtn">
+                                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                        <span>התנתקות מהמערכת</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+             </div>
+            </header>
+
+            <!-- אזור התוכן המרכזי של סביבת העבודה (מתחת לטופ בר) -->
+            <div class="main-workspace">
+                <!-- תיבת הברכה האישית (שלום, טוען... / טוען את נתוני סביבת העבודה שלך...) -->
+                <div class="welcome-box">
+                    <h1 class="welcome-title" id="welcomeTitle">שלום, טוען...</h1>
+                    <p class="welcome-subtitle" id="welcomeSubtitle">טוען את נתוני סביבת העבודה שלך...</p>
+                </div>
+            </div>
+
+        </main>
 
     </div> <!-- סגירת dashboard-layout -->
 
