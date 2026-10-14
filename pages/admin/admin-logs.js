@@ -79,17 +79,18 @@ async function loadLogs()
             editCount = editCount + 1;
         }
 
-        // בניית שורת הטבלה  
+        // בניית שורת הטבלה
+        // כעת גם אם בפירוט הפעולה יש תגיות HTML או סקריפטים הדפדפן של המנהל יציג אותם כטקסט תמים ולא יריץ שום קוד זדוני
         rowsHtml = rowsHtml + '<tr>' +
             '<td>' + log.id + '</td>' +
             '<td>' +
                 '<span class="log-badge ' + badgeClass + '">' +
                     '<i class="' + iconClass + '"></i> ' +
-                    log.action_type +
+                    safeText(log.action_type) +
                 '</span>' +
             '</td>' +
-            '<td class="log-details-text">' + log.details + '</td>' +
-            '<td><span class="log-time-text">' + log.created_at + '</span></td>' +
+            '<td class="log-details-text">' + safeText(log.details) + '</td>' +
+            '<td><span class="log-time-text">' + safeText(log.created_at) + '</span></td>' +
         '</tr>';
     }
 
@@ -169,4 +170,23 @@ async function logoutAdmin()
         localStorage.clear(); // מוחק את הלוקל סטורג 
         window.location.replace('../login.html'); // מעביר ישר ללוגין והנקודה בהתחלה אומר לו לצאת מהתקייה
     }
+}
+
+// פונקציה שמנקה תווים מסוכנים ומחזירה טקסט בטוח להצגה
+function safeText(text) 
+{
+    // בדיקה אם הטקסט ריק או לא קיים
+    if (text === null || text === undefined) 
+    {
+        return '';
+    }
+
+    // יצירת אלמנט זמני בזיכרון של הדפדפן
+    const div = document.createElement('div');
+
+    // הכנסה מאובטחת שהופכת תווים מסוכנים לטקסט בלבד
+    div.textContent = text;
+
+    // מחזיר את הטקסט כאשר התווים המסוכנים מנוטרלים ומומרים לקוד בטוח
+    return div.innerHTML;
 }

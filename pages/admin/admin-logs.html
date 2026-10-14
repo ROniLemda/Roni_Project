@@ -27,6 +27,15 @@
     <link rel="stylesheet" href="admin-logs.css">
 </head>
 
+    <!-- בדיקת אבטחה ישר אם אין טוקן התחברות זורק מיד לדף ההתחברות -->
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (token === null || token === '') 
+        {
+            window.location.replace('../login.html');
+        }
+    </script> 
+    
 <body>
 
     <!-- הקופסה שמחזיקה את כל הדף של המנהל -->

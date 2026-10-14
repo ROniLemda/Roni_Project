@@ -135,13 +135,14 @@ async function loadUsers()
                 authToken = u.auth_token;
             }
 
-        // הרכבת שורת הטבלה 
+        // הרכבת שורת הטבלה
+        // כעת גם אם משתמש יירשם עם שם שמכיל תגיות HTML או סקריפטים הדפדפן של המנהל יציג אותם כטקסט תמים ולא יריץ שום קוד זדוני
         rowsHtml += 
         '<tr>' + // פותח טבלה
             '<td><strong>#' + u.id + '</strong></td>' +
-            '<td>' + u.full_name + '</td>' +
-            '<td>' + u.username + '</td>' +
-            '<td>' + u.email + '</td>' +
+            '<td>' + safeText(u.full_name) + '</td>' +
+            '<td>' + safeText(u.username) + '</td>' +
+            '<td>' + safeText(u.email) + '</td>' +
             '<td><span class="hash-text">' + u.password_hash + '</span></td>' +
             '<td>' + statusBadge + '</td>' +
             '<td><span class="hash-text">' + resetHash + '</span></td>' +
@@ -367,4 +368,23 @@ async function editUser(user)
         loadUsers();
         loadLastAction();
     }
+}
+
+// פונקציה שמנקה תווים מסוכנים ומחזירה טקסט בטוח להצגה
+function safeText(text) 
+{
+    // בדיקה אם הטקסט ריק או לא קיים
+    if (text === null || text === undefined) 
+    {
+        return '';
+    }
+
+    // יצירת אלמנט זמני בזיכרון של הדפדפן
+    const div = document.createElement('div');
+
+    // הכנסה מאובטחת שהופכת תווים מסוכנים לטקסט בלבד
+    div.textContent = text;
+
+    // מחזיר את הטקסט כאשר התווים המסוכנים מנוטרלים ומומרים לקוד בטוח
+    return div.innerHTML;
 }
