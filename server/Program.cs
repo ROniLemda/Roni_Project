@@ -750,7 +750,7 @@ bool CheckIsAdmin(string token)
 
 
 
-{}//  פותח את דף הבית הראשי של השרת ומפעיל את הפונקציה למעלה כדי להציג את המשפט
+// פותח את דף הבית הראשי של השרת ומפעיל את הפונקציה למעלה כדי להציג את המשפט
 app.MapGet("/", GetStatus); 
 
 app.MapPost("/api/register", RegisterUser); // מחבר את פונקציית ה-RegisterUser 

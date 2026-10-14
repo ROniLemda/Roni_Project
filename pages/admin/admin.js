@@ -269,9 +269,10 @@ function searchUsers()
         {   
             rows[i].style.display = 'none'; // מסתיר
         }
-            // עדכון המספר בטבלה בזמן אמת
-    document.getElementById('tableCountText').textContent = 'מציג ' + visibleCount + ' משתמשים';
     }
+
+    // עדכון המספר בטבלה בזמן אמת
+    document.getElementById('tableCountText').textContent = 'מציג ' + visibleCount + ' משתמשים';
 }
 
 // פונקציה לעריכת משתמש שמקבלת אובייקט של המשתמש

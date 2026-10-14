@@ -136,10 +136,10 @@ function searchLogs()
         {   
             rows[i].style.display = 'none'; // מסתיר
         }
-
-        // עדכון המספר בטבלה בזמן אמת
-        document.getElementById('tableCountText').textContent = 'מציג ' + visibleCount + ' פעולות';
     }
+
+    // עדכון המספר בטבלה בזמן אמת
+    document.getElementById('tableCountText').textContent = 'מציג ' + visibleCount + ' פעולות';
 }
 
  // פונקציית התנתקות
