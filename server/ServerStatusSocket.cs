@@ -1,0 +1,55 @@
+using System.Net.WebSockets; // פותח את ארגז הכלים של תקשורת סוקט בסי שארפ
+using System.Text; // מאפשר המרה בין טקסט לבתים של מידע ברשת
+// ברשת האינטרנט ובסוקט מידע עובר בתור בתים
+
+// מחלקה שמנהלת את כל חיבורי הסוקט של תקינות השרת
+public static class ServerStatusSocket
+{
+     // פעולה שמטפלת בבדיקת הסטטוס דרך הסוקט
+    public static async Task CheckStatus(HttpContext http)
+    {
+        // בדיקה האם הפנייה שמגיעה מהדפדפן היא בקשת סוקט
+        if (http.WebSockets.IsWebSocketRequest == true)
+        {
+            // אישור בקשת הסוקט ופתיחת צינור תקשורת ישיר מול הדפדפן
+            using var socket = await http.WebSockets.AcceptWebSocketAsync();
+
+            // מערך בתים שיקלוט את הנתונים שמגיעים בסוקט
+            byte[] data = new byte[1024];
+
+            // לולאה שממשיכה לרוץ כל עוד החיבור בסוקט פתוח ותקין
+            while (socket.State == WebSocketState.Open)
+            {
+                //  המתנה לקבלת מידע מהדפדפן בסוקט ושמירה במערך
+                var info = await socket.ReceiveAsync(data, default);
+
+                // בדיקה האם הדפדפן ביקש לנתק או לסגור את הסוקט
+                if (info.MessageType == WebSocketMessageType.Close)
+                {
+                    // סגירה של החיבור מצד השרת ושחרור הקו
+                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "סגירה", default);
+                }
+                else
+                {
+                    // המרת הבתים שהתקבלו למחרוזת טקסט רגילה
+                    string message = Encoding.UTF8.GetString(data, 0, info.Count);
+
+                    // אם הדפדפן שלח בדיקת דופק
+                    if (message == "PING")
+                    {
+                        // המרת התשובה למערך בתים לשליחה ברשת
+                        byte[] response = Encoding.UTF8.GetBytes("PONG");
+
+                        // שליחת התשובה חזרה לדפדפן דרך הסוקט
+                        await socket.SendAsync(response, WebSocketMessageType.Text, true, default);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // אם זו פנייה רגילה ולא סוקט נחזיר שגיאה של בקשה לא תקינה
+            http.Response.StatusCode = 400;
+        }
+    }
+}

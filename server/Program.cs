@@ -32,8 +32,9 @@ void SetupCors(CorsPolicyBuilder policy)
     policy.AllowAnyMethod();
     policy.AllowAnyHeader();
 }
-app.UseCors(SetupCors); // הפעלת אישור הכניסה לכל הפניות מהאתר
 
+app.UseCors(SetupCors); // הפעלת אישור הכניסה לכל הפניות מהאתר
+app.UseWebSockets(); // הפעלת תמיכה בתקשורת סוקט בשרת
 
 
 string GetStatus()
@@ -779,6 +780,8 @@ app.MapPost("/api/admin/update-user", UpdateAdminUser);
 
 app.MapGet("/api/admin/logs", GetAdminLogs); 
 
+//  חיבור סוקט לבדיקה שהשרת תקין
+app.Map("/ws/status", ServerStatusSocket.CheckStatus);
 
 app.Run(); // מפעיל את השרת כדי שיתחיל להקשיב בלייב לבקשות של האתר
 
@@ -796,7 +799,7 @@ class UserLogin
 {
     public string Email { get; set; } = "";
     public string Password { get; set; } = "";
-         public string CaptchaToken { get; set; } = ""; // הטוקן שקיבלנו מהדפדפן
+    public string CaptchaToken { get; set; } = ""; // הטוקן שקיבלנו מהדפדפן
 }
 
 // מחלקה לקליטת נתוני אימות משתמש באיפוס סיסמה

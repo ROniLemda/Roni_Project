@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<!-- הגדרת שפה לעברית וכיוון קריאה מימין לשמאל -->
+<html lang="he" dir="rtl">
+<head>
+    <!-- UTF-8 לתמיכה מלאה בשפה העברית -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>HatimaPlus+ | Server Status</title>
+
+    <!-- בדיקת אבטחה אם אין טוקן זורק מיד לדף ההתחברות -->
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (token === null || token === '') 
+        {
+            window.location.replace('../login.html');
+        }
+    </script> 
+
+    <!-- פתיחת חיבור לפונטים של גוגל -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"> 
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ספריית אייקונים FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- ספריית הודעות מעוצבות SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- קובץ עיצוב ראשי של דפי המנהל -->
+    <link rel="stylesheet" href="admin.css">
+
+    <!-- עיצוב עבור הכרטיס הממורכז -->
+    <style>
+        .status-center-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 0;
+            width: 100%;
+        }
+
+        .status-main-card {
+            background-color: var(--color-white);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 36px 40px;
+            width: 100%;
+            max-width: 640px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .status-card-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 20px;
+        }
+
+        .status-header-icon {
+            width: 44px;
+            height: 44px;
+            background-color: rgba(10, 74, 222, 0.1);
+            color: var(--color-blue);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .status-header-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-dark);
+        }
+
+        .status-rows {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .row-label {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--color-gray);
+        }
+
+        .row-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-icon {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-icon.online {
+            background-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+        }
+
+        .status-icon.offline {
+            background-color: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        }
+
+        .status-text-online {
+            color: #10b981;
+        }
+
+        .status-text-offline {
+            color: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- הקופסה הראשית שמחזיקה את כל הדף של המנהל -->
+    <div class="admin-container">
+
+        <!-- סרגל צדדי ימני של המנהל (Sidebar) -->
+        <aside class="sidebar">
+
+            <!-- אזור לוגו המערכת -->
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <img src="../../images/logo.png" alt="חתימה+ לוגו">
+                </div>
+            </div>
+
+            <!-- תפריט ניווט ראשי למנהל -->
+            <div class="menu-links">
+                <ul>
+                    <!-- פריט 1 ניהול משתמשי המערכת -->
+                    <li>
+                        <a href="admin.html" class="menu-item" id="menuUsers">
+                            <span class="menu-text">ניהול משתמשי המערכת</span>
+                        </a>
+                    </li>
+
+                    <!-- פריט 2 פעולות אחרונות במערכת -->
+                    <li>
+                        <a href="admin-logs.html" class="menu-item" id="menuLogs">
+                            <span class="menu-text">פעולות אחרונות במערכת</span>
+                        </a>
+                    </li>
+
+                    <!-- פריט 3 סטטוס ומצב השרת פעיל בדף זה -->
+                    <li>
+                        <a href="admin-status.html" class="menu-item active" id="menuStatus">
+                            <span class="menu-text">סטטוס ומצב השרת</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- תחתית הסרגל: פרופיל מנהל והתנתקות -->
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="admin-avatar">
+                        <img src="../../images/svg/avatar_Profile.svg" alt="תמונת מנהל">
+                    </div>
+                    <div class="admin-details">
+                        <span class="admin-name" id="sidebarAdminName">מנהל מערכת</span>
+                        <span class="admin-status">
+                            <span class="online-dot"></span> מחובר כעת
+                        </span>
+                    </div>
+                    <button class="logout-btn" id="adminLogoutBtn" title="התנתקות">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- אזור התוכן הראשי של המנהל -->
+        <main class="main-content">
+
+            <!-- כותרת ראשית של הדף -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>סטטוס ומצב השרת</h1>
+                    <p>מרכז בקרה לעקוב אחר זמני התגובה של השרת, יציבות החיבור ומצב מסד הנתונים בכל רגע נתון.</p>
+                </div>
+            </div>
+
+            <!-- כרטיס ראשי ממורכז לניטור השרת ומסד הנתונים -->
+            <div class="status-center-container">
+                <div class="status-main-card">
+                    
+                    <div class="status-card-header">
+                        <div class="status-header-icon">
+                            <i class="fa-solid fa-server"></i>
+                        </div>
+                        <h2 class="status-header-title">תמונת מצב של ביצועי השרת ויציבות המערכת</h2>
+                    </div>
+
+                    <div class="status-rows">
+                        <!-- שורה 1 סטטוס שרת בלייב דרך הסוקט -->
+                        <div class="status-row">
+                            <span class="row-label">סטטוס שרת (Socket)</span>
+                            <span class="row-value" id="serverStatusDisplay">
+                                <span class="status-icon online" id="serverStatusIcon"></span>
+                                <span class="status-text-online" id="serverStatusText">שרת מחובר</span>
+                            </span>
+                        </div>
+
+                        <!-- שורה 2 סוג תקשורת -->
+                        <div class="status-row">
+                            <span class="row-label">פרוטוקול תקשורת</span>
+                            <span class="row-value">WebSocket (TCP)</span>
+                        </div>
+
+                        <!-- שורה 3 סוג מסד הנתונים -->
+                        <div class="status-row">
+                            <span class="row-label">סוג מסד נתונים</span>
+                            <span class="row-value">PostgreSQL</span>
+                        </div>
+
+                        <!-- שורה 4 מצב מסד נתונים -->
+                        <div class="status-row">
+                            <span class="row-label">מצב מסד נתונים</span>
+                            <span class="row-value">
+                                <span class="status-icon online"></span>
+                                <span class="status-text-online">מחובר ותקין</span>
+                            </span>
+                        </div>
+
+                        <!-- שורה 5 פורט האזנה של השרת -->
+                        <div class="status-row">
+                            <span class="row-label">פורט האזנה</span>
+                            <span class="row-value">5057</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <!-- טעינת סקריפט הסוקט וסקריפט דף הסטטוס -->
+    <script src="../server-status.js"></script>
+    <script src="admin-status.js"></script>
+</body>
+</html>
