@@ -2,8 +2,15 @@
 const API_URL = 'http://localhost:5057';
 
 // בעת טעינת הדף
-window.onload = function()
+window.onload = async function()
 {
+    // בדיקת אבטחה מול השרת לוודא שהטוקן בתוקף
+    const isAuth = await checkAdminAuth();
+    if (isAuth === false) 
+    {
+        return;
+    }
+
     // חיבור כפתור ההתנתקות
     const logoutBtn = document.getElementById('adminLogoutBtn');
     if (logoutBtn) 
@@ -33,6 +40,37 @@ window.onload = function()
     loadUsers();
     loadLastAction();
 };
+
+// פונקציה לבדיקת תקינות הטוקן של המנהל מול השרת
+async function checkAdminAuth() 
+{
+    const authToken = localStorage.getItem('authToken');
+    if (authToken === null || authToken === '') 
+    {
+        localStorage.clear();
+        window.location.replace('../login.html');
+        return false;
+    }
+
+    // בדיקת תקינות הטוקן מול השרת
+    const response = await fetch(API_URL + '/api/verify-token', 
+    {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: authToken })
+    });
+
+    const result = await response.text();
+    // אם הטוקן פג תוקף או אינו תקין מנקים את הזיכרון ומעיפים להתחברות
+    if (result.includes('אינו תקין') === true) 
+    {
+        localStorage.clear();
+        window.location.replace('../login.html');
+        return false;
+    }
+
+    return true;
+}
 
 // פונקציה לשליפת הפעולה האחרונה ממסד הנתונים
 async function loadLastAction() 
