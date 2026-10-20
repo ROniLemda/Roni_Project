@@ -25,6 +25,9 @@ function startSocket()
             statusIcon.className = 'status-icon online'; // צביעת האייקון בצבע ירוק זוהר
         }
 
+        // איפוס הדגל בזיכרון כאשר השרת חוזר לפעול בהצלחה
+        sessionStorage.removeItem('serverStatusAlertShown');
+
         // שליחת בדיקת דופק ראשונה לשרת
         socket.send('PING');
     };
@@ -43,18 +46,25 @@ function startSocket()
             statusIcon.className = 'status-icon offline'; // צביעת האייקון בצבע אדום זוהר
         }
 
-        // הקפצת הודעה למנהל על שינוי בסטטוס השרת עם כפתור לרענון הדף
-        await Swal.fire({
-            icon: 'info',
-            title: 'חל שינוי בסטטוס השרת',
-            text: 'הקשר מול השרת השתנה, לחץ על הכפתור כדי לרענן את נתוני הדף',
-            confirmButtonText: 'רענן דף',
-            confirmButtonColor: '#0052cc',
-            allowOutsideClick: false // מונע סגירה של החלון בלחיצה על הרקע ומחייב לחיצה על כפתור הרענון
-        });
+        // בדיקה האם ההודעה כבר הוצגה כדי למנוע לולאת קפיצה לאחר רענון
+        if (sessionStorage.getItem('serverStatusAlertShown') !== 'true') 
+        {
+            // שמירת סימון בזיכרון הלשונית שההודעה כבר הוצגה
+            sessionStorage.setItem('serverStatusAlertShown', 'true');
 
-        // רענון הדף לאחר לחיצה על הכפתור
-        window.location.reload();
+            // הקפצת הודעה למנהל על שינוי בסטטוס השרת עם כפתור לרענון הדף
+            await Swal.fire({
+                icon: 'info',
+                title: 'חל שינוי בסטטוס השרת',
+                text: 'הקשר מול השרת השתנה, לחץ על הכפתור כדי לרענן את נתוני הדף',
+                confirmButtonText: 'רענן דף',
+                confirmButtonColor: '#0052cc',
+                allowOutsideClick: false // מונע סגירה של החלון בלחיצה על הרקע ומחייב לחיצה על כפתור הרענון
+            });
+
+            // רענון הדף לאחר לחיצה על הכפתור
+            window.location.reload();
+        }
     };
 
     // אירוע שמופעל במקרה של שגיאת תקשורת בסוקט
