@@ -219,6 +219,12 @@ async Task<string> RegisterUser(UserRegister data)
 // פונקציית התחברות עם אימות דו שלבי (2FA)
 async Task<string> LoginUser(UserLogin data)
 {
+    // בדיקה ששדות האימייל והסיסמה אינם ריקים
+    if (data.Email == null || data.Email == "" || data.Password == null || data.Password == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
     //  פנייה לגוגל לוודא שהאימות אכן אמיתי ולא בוט
     using var httpClient = new HttpClient();
     string verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=" + recaptchaSecretKey + "&response=" + data.CaptchaToken;
@@ -296,6 +302,12 @@ async Task<string> LoginUser(UserLogin data)
 
 async Task<string> CheckUserForReset(UserReset data)
 {
+    // בדיקה ששם המשתמש והאימייל אינם ריקים
+    if (data.Username == null || data.Username == "" || data.Email == null || data.Email == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
     // פתיחת חיבור למסד הנתונים
     using var connection = new NpgsqlConnection(databaseAddress);
     connection.Open();
@@ -338,6 +350,12 @@ async Task<string> CheckUserForReset(UserReset data)
 
 string VerifyResetCode(VerifyCodeRequest data)
 {
+    // בדיקה שקוד האימות והאימייל אינם ריקים
+    if (data.Code == null || data.Code == "" || data.Email == null || data.Email == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
     //  מצפינים את הקוד שהמשתמש הקליד עכשיו כדי להשוות ל-Hash ששמור
     string hashedInputCode = HashPassword(data.Code);
 
@@ -499,6 +517,20 @@ async Task<string> ResendCode(ResendCodeRequest data)
 
 string UpdatePassword(UpdatePasswordRequest data)
 {
+    // בדיקה שכל השדות הוזנו כראוי
+    if (data.Email == null || data.Email == "" || 
+        data.NewPassword == null || data.NewPassword == "" || 
+        data.Token == null || data.Token == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // בדיקת אורך מינימלי לסיסמה החדשה
+    if (data.NewPassword.Length < 6)
+    {
+        return "הסיסמה החדשה חייבת להכיל לפחות 6 תווים.";
+    }
+
     // מצפינים את הסיסמה החדשה ב-SHA-256
     string newHashedPass = HashPassword(data.NewPassword);
 
