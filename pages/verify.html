@@ -90,6 +90,27 @@
   </div> <!-- סגירה של הקונטיינר הראשי -->
 
 <script>
+// שליפת טוקן האיפוס מזיכרון הלשונית של הדפדפן אם הוא קיים
+const savedResetToken = sessionStorage.getItem('resetToken');
+
+// יצירת כלי לקריאת המשתנים המועברים בשורת הכתובת של הדפדפן
+const currentUrlParams = new URLSearchParams(window.location.search);
+
+// שליפת סוג האימות מתוך הכתובת כדי לדעת האם מדובר בהרשמה התחברות או איפוס סיסמה
+const currentType = currentUrlParams.get('type');
+
+// אם קיים טוקן איפוס בזיכרון
+if (savedResetToken !== null && savedResetToken !== '') 
+{
+    // ובתנאי שזה לא תהליך הרשמה או התחברות
+    if (currentType !== 'register' && currentType !== 'login')
+    {
+        // הסתרת תיבות הקוד והצגת טופס הסיסמה החדשה
+        document.querySelector('.verify-panel').style.display = 'none';
+        document.getElementById('newPasswordPanel').style.display = 'block';
+    }
+}
+
 // קפיצה אוטומטית בין ריבועי הקוד
 const boxes = document.querySelectorAll('.otp-input');
 boxes[0].oninput = function() { boxes[1].focus(); }
@@ -324,12 +345,20 @@ newPasswordForm.onsubmit = async function(e)
      }
     else
     {
-       Swal.fire({
-       icon: 'error',
-       text: result,
-       confirmButtonText: 'סגירה',
-       confirmButtonColor: '#0052cc'
-      });
+        // הצגת הודעת השגיאה והמתנה ללחיצת המשתמש
+        await Swal.fire({
+            icon: 'error',
+            text: result,
+            confirmButtonText: 'חזרה להתחברות',
+            confirmButtonColor: '#0052cc'
+        });
+
+        // אם תוקף הפעולה פג מנקים את הזיכרון ומחזירים לדף ההתחברות
+        if (result.includes('פג תוקף') || result.includes('אינך מורשה'))
+        {
+            sessionStorage.removeItem('resetToken');
+            window.location.href = 'login.html';
+        }
     }
 };
 

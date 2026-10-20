@@ -81,6 +81,14 @@ async function loadLogs()
 
     // שולחים בקשה לשרת יחד עם הטוקן ומקבלים את הרשימה מהמסד
     const response = await fetch(API_URL + '/api/admin/logs?token=' + authToken);
+
+    // אם השרת החזיר 401 המשתמש אינו מנהל ומעבירים אותו מיד לדשבורד הרגיל שלו
+    if (response.status === 401)
+    {
+        window.location.replace('../dashboard.html');
+        return;
+    }
+
     const logs = await response.json();
 
     // משתנים לשורות הטבלה ולספירת הפעולות

@@ -30,7 +30,7 @@ function startSocket()
     };
 
     // פעולה שמופעלת ברגע שהשרת מתנתק נכבה או קורס
-    socket.onclose = function() 
+    socket.onclose = async function() 
     {
         // בדיקת הגנה שהאלמנט קיים בדף לפני עדכון המסך למצב מנותק
         if (statusText !== null) 
@@ -42,6 +42,19 @@ function startSocket()
         {
             statusIcon.className = 'status-icon offline'; // צביעת האייקון בצבע אדום זוהר
         }
+
+        // הקפצת הודעה למנהל על שינוי בסטטוס השרת עם כפתור לרענון הדף
+        await Swal.fire({
+            icon: 'info',
+            title: 'חל שינוי בסטטוס השרת',
+            text: 'הקשר מול השרת השתנה, לחץ על הכפתור כדי לרענן את נתוני הדף',
+            confirmButtonText: 'רענן דף',
+            confirmButtonColor: '#0052cc',
+            allowOutsideClick: false // מונע סגירה של החלון בלחיצה על הרקע ומחייב לחיצה על כפתור הרענון
+        });
+
+        // רענון הדף לאחר לחיצה על הכפתור
+        window.location.reload();
     };
 
     // אירוע שמופעל במקרה של שגיאת תקשורת בסוקט

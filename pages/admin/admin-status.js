@@ -11,6 +11,15 @@ window.onload = async function()
         return;
     }
 
+    // בדיקה האם המשתמש הוא מנהל מורשה מול השרת
+    const authToken = localStorage.getItem('authToken');
+    const adminCheck = await fetch(API_URL + '/api/admin/logs?token=' + authToken);
+    if (adminCheck.status === 401)
+    {
+        window.location.replace('../dashboard.html');
+        return;
+    }
+
     // חיבור כפתור ההתנתקות של המנהל
     const logoutBtn = document.getElementById('adminLogoutBtn');
     if (logoutBtn) 

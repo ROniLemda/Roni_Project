@@ -277,7 +277,8 @@ loginForm.onsubmit = async function(e)
       });
 
       // מעבירים לדף הזנת הקוד עם ציון סוג הפעולה כהתחברות
-      window.location.href = 'verify.html?type=login&email=' + loginEmail.value;
+      // הפונקציה המובנית encodeURIComponent ממירה תווים מיוחדים כמו פלוס לקידוד בטוח כדי שלא יישברו בכתובת האינטרנט
+      window.location.href = 'verify.html?type=login&email=' + encodeURIComponent(loginEmail.value);
   }
   else
   {
@@ -394,7 +395,8 @@ signupForm.onsubmit = async function(e)
         });
 
         // רק אחרי שהמשתמש לחץ על הכפתור בחלון, עוברים לדף האימות
-        window.location.href = 'verify.html?type=register&email=' + emailInput.value;
+        // הפונקציה המובנית encodeURIComponent מקודדת את האימייל בצורה מאובטחת למניעת שבירת כתובת הקישור
+        window.location.href = 'verify.html?type=register&email=' + encodeURIComponent(emailInput.value);
     }
     else
     {

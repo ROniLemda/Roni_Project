@@ -1,6 +1,9 @@
 // כתובת השרת
 const API_URL = 'http://localhost:5057';
 
+// רשימה גלובלית ששומרת את כל המשתמשים שנטענו מהשרת
+let allUsersList = [];
+
 // בעת טעינת הדף
 window.onload = async function()
 {
@@ -80,6 +83,13 @@ async function loadLastAction()
 
     // שליחת בקשה לשרת עם הטוקן
     const response = await fetch(API_URL + '/api/admin/logs?token=' + authToken);
+
+    // אם השרת החזיר 401 עוצרים מיד כדי למנוע שגיאת קריאה
+    if (response.status === 401)
+    {
+        return;
+    }
+
     const logs = await response.json();
 
     // אם קיימות פעולות ביומן במסד הנתונים
@@ -129,7 +139,17 @@ async function loadUsers()
 
     // שולחים בקשה לשרת יחד עם הטוקן ומקבלים את הרשימה מהמסד
     const response = await fetch(API_URL + '/api/admin/users?token=' + authToken);
+
+    // אם השרת החזיר 401 המשתמש אינו מנהל ומעבירים אותו מיד לדשבורד הרגיל שלו
+    if (response.status === 401)
+    {
+        window.location.replace('../dashboard.html');
+        return;
+    }
+
     const users = await response.json();
+    // שמירת רשימת המשתמשים ברשימה הגלובלית לצורך עריכה ומחיקה מאובטחת
+    allUsersList = users;
 
     //  משתנים לשורות ולספירת הסטטיסטיקות
     let rowsHtml = '';
@@ -181,15 +201,16 @@ async function loadUsers()
             '<td>' + safeText(u.full_name) + '</td>' +
             '<td>' + safeText(u.username) + '</td>' +
             '<td>' + safeText(u.email) + '</td>' +
-            '<td><span class="hash-text">' + u.password_hash + '</span></td>' +
+            '<td><span class="hash-text">' + safeText(u.password_hash) + '</span></td>' +
             '<td>' + statusBadge + '</td>' +
-            '<td><span class="hash-text">' + resetHash + '</span></td>' +
-            '<td>' + resetExpires + '</td>' +
-            '<td><span class="hash-text">' + authToken + '</span></td>' +
+            '<td><span class="hash-text">' + safeText(resetHash) + '</span></td>' +
+            '<td>' + safeText(resetExpires) + '</td>' +
+            '<td><span class="hash-text">' + safeText(authToken) + '</span></td>' +
             '<td>' +
                 '<div class="action-btns">' +
-                    '<button class="btn-table-action btn-edit" onclick=\'editUser(' + JSON.stringify(u) + ')\' title="ערוך משתמש">' +
-                        '<i class="fa-solid fa-pen-to-square"></i>' +
+                    // שליחת מספר הזיהוי בלבד כדי למנוע שבירת תגיות על ידי גרשיים או מירכאות
+                    '<button class="btn-table-action btn-edit" onclick="editUser(' + u.id + ')" title="ערוך משתמש">' +
+                    '<i class="fa-solid fa-pen-to-square"></i>' +
                     '</button>' +
                     '<button class="btn-table-action btn-delete" onclick="deleteUser(' + u.id + ')" title="מחק משתמש">' +
                         '<i class="fa-solid fa-trash-can"></i>' +
@@ -253,11 +274,11 @@ async function deleteUser(userId)
 
          const message = await response.text(); // שמירת התשובה
 
-        // בדיקה אם הגישה נדחתה בגלל חוסר הרשאות מנהל
-        if (message.includes('גישה נדחתה') === true) 
+        // בדיקה אם פעולת המחיקה נחסמה או נכשלה
+        if (message.includes('בהצלחה') === false) 
         {
             Swal.fire({
-                title: 'שגיאת אבטחה',
+                title: 'שגיאה בביצוע הפעולה',
                 text: message,
                 icon: 'error',
                 confirmButtonColor: '#0a4ade',
@@ -313,27 +334,53 @@ function searchUsers()
     document.getElementById('tableCountText').textContent = 'מציג ' + visibleCount + ' משתמשים';
 }
 
-// פונקציה לעריכת משתמש שמקבלת אובייקט של המשתמש
-async function editUser(user) 
+// פונקציה לעריכת משתמש שמקבלת את מזהה המשתמש בלבד ומגנה מפני שבירת תווים
+async function editUser(userId) 
 {
+    // איתור המשתמש ברשימה לפי המספר המזהה שלו
+    let user = null;
+    for (let i = 0; i < allUsersList.length; i++) 
+    {
+        if (allUsersList[i].id === userId) 
+        {
+            user = allUsersList[i];
+            break;
+        }
+    }
+
+    // אם המשתמש לא נמצא ברשימה עוצרים את הפעולה
+    if (user === null) 
+    {
+        return;
+    }
+
     // פתיחת חלון העריכה
     const formResult = await Swal.fire({
         title: 'עריכת פרטי משתמש',
         html:
             '<div class="edit-modal-form">' +
                 '<div class="edit-form-group">' +
-                    '<label>שם מלא:</label>' +
-                    '<input id="swalFullName" class="edit-modal-input" placeholder="הזן שם מלא" value="' + user.full_name + '">' +
+                    '<label>שם מלא</label>' +
+                    '<input id="swalFullName" class="edit-modal-input" placeholder="הזן שם מלא">' +
                 '</div>' +
                 '<div class="edit-form-group">' +
-                    '<label>שם משתמש:</label>' +
-                    '<input id="swalUsername" class="edit-modal-input" placeholder="הזן שם משתמש" value="' + user.username + '">' +
+                    '<label>שם משתמש</label>' +
+                    '<input id="swalUsername" class="edit-modal-input" placeholder="הזן שם משתמש">' +
                 '</div>' +
                 '<div class="edit-form-group">' +
-                    '<label>כתובת אימייל:</label>' +
-                    '<input id="swalEmail" type="email" class="edit-modal-input" placeholder="הזן כתובת אימייל" value="' + user.email + '">' +
+                    '<label>כתובת אימייל</label>' +
+                    '<input id="swalEmail" type="email" class="edit-modal-input" placeholder="הזן כתובת אימייל">' +
                 '</div>' +
             '</div>',
+        // פונקציית didOpen מופעלת רק לאחר שה-HTML של החלון סיים להיטען במסך
+        // זה מבטיח שהשדות כבר קיימים בדף ומאפשר להזין לתוכם ערכים בצורה מאובטחת בלי שבירת מרכאות
+        didOpen: function() 
+        {
+            // השמת הערכים לשדות בצורה בטוחה דרך המאפיין value כדי לחסום פרצות אבטחה של הזרקת קוד
+            document.getElementById('swalFullName').value = user.full_name;
+            document.getElementById('swalUsername').value = user.username;
+            document.getElementById('swalEmail').value = user.email;
+        },
         showCancelButton: true,
         confirmButtonColor: '#0a4ade',
         cancelButtonColor: '#94a3b8',
@@ -381,11 +428,11 @@ async function editUser(user)
 
         const message = await response.text(); // שמירת התשובה
 
-        // בדיקה אם הגישה נדחתה בגלל חוסר הרשאות מנהל
-        if (message.includes('גישה נדחתה') === true) 
+        // בדיקה אם פעולת העדכון נחסמה או נכשלה
+        if (message.includes('בהצלחה') === false) 
         {
             Swal.fire({
-                title: 'שגיאת אבטחה',
+                title: 'שגיאה בביצוע הפעולה',
                 text: message,
                 icon: 'error',
                 confirmButtonColor: '#0a4ade',
