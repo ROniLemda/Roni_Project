@@ -456,20 +456,26 @@ string VerifyResetCode(VerifyCodeRequest data)
 // פונקציה לשליחה מחדש של קוד אימות עם מנגנון הגנה מפני הצפת אימיילים
 async Task<string> ResendCode(ResendCodeRequest data)
 {
+    // בדיקה ששדה האימייל או שם המשתמש אינו ריק
+    if (data.Email == null || data.Email == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
     // פתיחת צינור התקשורת מול מסד הנתונים
     using var connection = new NpgsqlConnection(databaseAddress);
     connection.Open();
 
-    // שליפת מזהה המשתמש ותאריך התפוגה של הקוד הקיים לצורך בדיקת קצב הבקשות
-    string checkSql = "SELECT id, reset_code_expires FROM users WHERE email = @email";
+    // שליפת מזהה המשתמש תאריך התפוגה וכתובת האימייל האמיתית לצורך בדיקת קצב הבקשות
+    string checkSql = "SELECT id, reset_code_expires, email FROM users WHERE email = @loginInput OR username = @loginInput";
     using var checkCmd = new NpgsqlCommand(checkSql, connection); // צינור פקודה מאובטח למניעת הזרקות קוד
-    checkCmd.Parameters.AddWithValue("@email", data.Email);
+    checkCmd.Parameters.AddWithValue("@loginInput", data.Email);
 
     using var reader = checkCmd.ExecuteReader(); // הרצת הבדיקה מול מסד הנתונים
     if (reader.Read() == false)
     { 
         // אם לא נמצא משתמש כזה מחזירים הודעה מתאימה
-        return "כתובת האימייל שהוזנה אינה רשומה במערכת, אנא בדוק את הפרטים.";  
+        return "כתובת האימייל או שם המשתמש אינם רשומים במערכת, אנא בדוק את הפרטים.";  
     }
 
     // מנגנון הגנה מתקדם בשרת מפני הצפה ושליחה מרובה של אימיילים
@@ -489,6 +495,9 @@ async Task<string> ResendCode(ResendCodeRequest data)
         }
     }
 
+    // שליפת כתובת האימייל האמיתית של המשתמש מהמסד
+    string realEmail = reader.GetString(2);
+
     reader.Close(); // סוגרים את הקורא כדי לפנות את החיבור להרצת פקודת העדכון הבאה
 
     // הגרלת קוד חדש בן 6 ספרות באמצעות מחולל אקראי קריפטוגרפי שלא ניתן לניחוש
@@ -505,11 +514,11 @@ async Task<string> ResendCode(ResendCodeRequest data)
     using var updateCmd = new NpgsqlCommand(updateSql, connection);
     updateCmd.Parameters.AddWithValue("@code", hashedCode);
     updateCmd.Parameters.AddWithValue("@expire", expireTime);
-    updateCmd.Parameters.AddWithValue("@email", data.Email);
+    updateCmd.Parameters.AddWithValue("@email", realEmail);
     updateCmd.ExecuteNonQuery(); // ביצוע פעולת העדכון בפועל בטבלת המשתמשים
 
     // שליחת הודעת הדואל עם הקוד הגלוי דרך שרת Brevo
-    await SendEmail(data.Email, newCode);
+    await SendEmail(realEmail, newCode);
 
     // החזרת הודעת אישור למשתמש
     return "קוד אימות חדש נשלח לכתובת האימייל שלך לתשומת ליבך, תוקף הקוד הינו ל-10 דקות בלבד.";
