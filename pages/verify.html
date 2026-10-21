@@ -261,6 +261,7 @@ document.getElementById('newPassInfo').onclick = function()
                     <li>הסיסמה חייבת להכיל 6 תווים ומעלה</li>
                     <li>חובה לבצע שילוב של אות גדולה אחת לפחות באנגלית (A-Z)</li>
                     <li>דרישת חובה לסימן מיוחד אחד לפחות (! או @ או # או $)</li>
+                    <li>חל איסור על שימוש בתו | (קו מפריד)</li>
                 </ul>
             </div>
         `,
@@ -377,6 +378,8 @@ resendBtn.onclick = async function(e)
         return;
     }
 
+    isWaiting = true; // נעילת הכפתור מיד למניעת לחיצה כפולה ושליחה כפולה ברשת
+
     // שליפת האימייל מה URL
     const urlParams = new URLSearchParams(window.location.search);
     const userEmail = urlParams.get('email');
@@ -391,6 +394,7 @@ resendBtn.onclick = async function(e)
   // אם השרת התרסק (קוד 500) או שיש בעיית תקשורת כללית
   if (response.ok === false) 
   {
+    isWaiting = false; // שחרור הנעילה אם חלה שגיאת תקשורת
     Swal.fire({
         icon: 'error',
         text: 'אירעה תקלה בשרת בעת שליחת המייל, אנא נסה שוב מאוחר יותר.',
@@ -438,6 +442,7 @@ if (result.includes('נשלח'))
   }
 else 
 {
+    isWaiting = false; // שחרור הנעילה אם השרת החזיר שגיאה
     // אחרת הייתה שגיאה כלשהי (האימייל לא קיים, בעיית תקשורת וכו')
     Swal.fire({
         icon: 'error',

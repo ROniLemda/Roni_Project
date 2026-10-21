@@ -62,8 +62,8 @@ async function checkAdminAuth()
     });
 
     const result = await response.text();
-    // אם הטוקן פג תוקף או אינו תקין מנקים את הזיכרון ומעיפים להתחברות
-    if (result.includes('אינו תקין') === true) 
+    // אם השרת החזיר שגיאה או שהתשובה אינה כוללת תקין מנקים את הזיכרון ומעבירים להתחברות
+    if (response.ok === false || result.includes('תקין') === false) 
     {
         localStorage.clear();
         window.location.replace('../login.html');

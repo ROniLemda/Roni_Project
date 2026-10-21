@@ -32,8 +32,8 @@ window.onload = async function()
     });
 
     const result = await response.text();
-    // אם השרת לא החזיר שהטוקן תקין (אז האקר / טוקן פג תוקף) מנקים זיכרון ומעיפים
-    if (result.includes('אינו תקין') === true)
+    // אם השרת החזיר שגיאה או שהתשובה אינה כוללת תקין מנקים זיכרון ומעבירים להתחברות
+    if (response.ok === false || result.includes('תקין') === false)
     {
         localStorage.removeItem('authToken');
         localStorage.removeItem('currentUser');

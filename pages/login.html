@@ -185,8 +185,8 @@ loginForm.onsubmit = async function(e)
         hasError = true;
     }
 
-    // 3. בדיקת סיסמה
-    const passError = Auth.checkPassword(loginPassword.value);
+    // 3. בדיקת סיסמה בהתחברות בדיקה שהשדה אינו ריק
+    const passError = Auth.checkLoginPassword(loginPassword.value);
     if (passError !== '') 
     {
         loginPassError.textContent = passError;
@@ -226,7 +226,7 @@ loginForm.onsubmit = async function(e)
             if (captchaToken == false) 
             {
                 Swal.showValidationMessage('אימות האבטחה של reCAPTCHA נכשל נא אשר שאינך רובוט ונסה שנית.');
-                return false; // עוצר את החלון ולא נותן לו להיסגר!
+                return false; // עוצר את החלון ולא נותן לו להיסגר
             }
             return captchaToken;
         }
@@ -257,38 +257,50 @@ loginForm.onsubmit = async function(e)
         captchaToken: captchaResult.value
     };
 
-   // שליחה לשרת לנתיב /api/login
-   const response = await fetch(API_URL + '/api/login',
-  {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(loginData)
-  });
+    // נעילת כפתור ההתחברות מיד למניעת לחיצה כפולה ושליחה כפולה ברשת
+    const submitBtn = loginForm.querySelector('.login-button');
+    submitBtn.disabled = true;
 
-  // קבלת התשובה מהשרת והצגתה
-  const result = await response.text();
-  if (result.includes('בהצלחה') || result.includes('קוד אימות'))
-  {
-      await Swal.fire({
-          icon: 'success',
-          text: result,
-          confirmButtonText: 'המשך לתהליך האימות',
-          confirmButtonColor: '#0052cc'
+    try 
+    {
+       // שליחה לשרת לנתיב /api/login
+       const response = await fetch(API_URL + '/api/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginData)
       });
 
-      // מעבירים לדף הזנת הקוד עם ציון סוג הפעולה כהתחברות
-      // הפונקציה המובנית encodeURIComponent ממירה תווים מיוחדים כמו פלוס לקידוד בטוח כדי שלא יישברו בכתובת האינטרנט
-      window.location.href = 'verify.html?type=login&email=' + encodeURIComponent(loginEmail.value);
-  }
-  else
-  {
-      Swal.fire({
-          icon: 'error',
-          text: result,
-          confirmButtonText: 'סגירה',
-          confirmButtonColor: '#0052cc'
-      });
-  }
+      // קבלת התשובה מהשרת והצגתה
+      const result = await response.text();
+      if (result.includes('בהצלחה') || result.includes('קוד אימות'))
+      {
+          await Swal.fire({
+              icon: 'success',
+              text: result,
+              confirmButtonText: 'המשך לתהליך האימות',
+              confirmButtonColor: '#0052cc'
+          });
+
+          // מעבירים לדף הזנת הקוד עם ציון סוג הפעולה כהתחברות
+          // הפונקציה המובנית encodeURIComponent ממירה תווים מיוחדים כמו פלוס לקידוד בטוח כדי שלא יישברו בכתובת האינטרנט
+          window.location.href = 'verify.html?type=login&email=' + encodeURIComponent(loginEmail.value);
+      }
+      else
+      {
+          Swal.fire({
+              icon: 'error',
+              text: result,
+              confirmButtonText: 'סגירה',
+              confirmButtonColor: '#0052cc'
+          });
+      }
+    }
+    finally 
+    {
+        // שחרור כפתור ההתחברות לאחר קבלת התשובה
+        submitBtn.disabled = false;
+    }
 }
 
 // הדפסה למסך הודעת שגיאה בעת הרשמה
@@ -375,37 +387,49 @@ signupForm.onsubmit = async function(e)
       password: passInput.value // שולף את הטקסט מתיבת השם הסיסמא
     };
 
-    // שולח את החבילה לשרת
-    const response = await fetch(API_URL + '/api/register',
-    {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
-    });
+    // נעילת כפתור ההרשמה מיד למניעת לחיצה כפולה ושליחה כפולה ברשת
+    const submitBtn = signupForm.querySelector('.login-button');
+    submitBtn.disabled = true;
 
-    // מקבל את התשובה מהשרת
-    const result = await response.text();
-    if (result.includes('בהצלחה') || result.includes('קוד אימות'))
+    try
     {
-        await Swal.fire({ 
-            icon: 'success',
-            text: result,
-            confirmButtonText: 'מעבר לתהליך האימות',
-            confirmButtonColor: '#0052cc'
+        // שולח את החבילה לשרת
+        const response = await fetch(API_URL + '/api/register',
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
         });
 
-        // רק אחרי שהמשתמש לחץ על הכפתור בחלון, עוברים לדף האימות
-        // הפונקציה המובנית encodeURIComponent מקודדת את האימייל בצורה מאובטחת למניעת שבירת כתובת הקישור
-        window.location.href = 'verify.html?type=register&email=' + encodeURIComponent(emailInput.value);
+        // מקבל את התשובה מהשרת
+        const result = await response.text();
+        if (result.includes('בהצלחה') || result.includes('קוד אימות'))
+        {
+            await Swal.fire({ 
+                icon: 'success',
+                text: result,
+                confirmButtonText: 'מעבר לתהליך האימות',
+                confirmButtonColor: '#0052cc'
+            });
+
+            // רק אחרי שהמשתמש לחץ על הכפתור בחלון, עוברים לדף האימות
+            // הפונקציה המובנית encodeURIComponent מקודדת את האימייל בצורה מאובטחת למניעת שבירת כתובת הקישור
+            window.location.href = 'verify.html?type=register&email=' + encodeURIComponent(emailInput.value);
+        }
+        else
+        {
+            Swal.fire({
+                icon: 'error',
+                text: result,
+                confirmButtonText: 'סגירה',
+                confirmButtonColor: '#0052cc'
+            });
+        }
     }
-    else
+    finally
     {
-        Swal.fire({
-            icon: 'error',
-            text: result,
-            confirmButtonText: 'סגירה',
-            confirmButtonColor: '#0052cc'
-        });
+        // שחרור כפתור ההרשמה לאחר קבלת התשובה מהשרת
+        submitBtn.disabled = false;
     }
 };
 // סיום הדפסה למסך הודעת שגיאה בעת הרשמה
@@ -439,7 +463,9 @@ function showPasswordRules()  // מדריך הוראות
                 <ul style="padding-right: 20px; margin: 0;">
                     <li>הסיסמה חייבת להכיל 6 תווים ומעלה</li>
                     <li>חובה לבצע שילוב של אות גדולה אחת לפחות באנגלית (A-Z)</li>
-                    <li>דרישת חובה לסימן מיוחד אחד לפחות (! או @ או # או $)</li>                </ul>
+                    <li>דרישת חובה לסימן מיוחד אחד לפחות (! או @ או # או $)</li>
+                    <li>חל איסור על שימוש בתו | (קו מפריד)</li>
+                </ul>
             </div>
         `,
         confirmButtonText: 'לתפריט ההתחברות',
@@ -448,21 +474,21 @@ function showPasswordRules()  // מדריך הוראות
 }
 
 // פונקציה שמקבלת את התשובה מגוגל אחרי שהמשתמש אישר
-async function loginWithGoogle(token) 
+async function loginWithGoogle(token, nonce) 
 {
-    // שולחים את הטוקן לשרת שלנו כדי שירשום/יחבר את המשתמש
+    // שולחים את הטוקן ואת ה-nonce לשרת שלנו כדי שירשום/יחבר את המשתמש
     const res = await fetch(API_URL + '/api/google-login', 
     {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token })
+        body: JSON.stringify({ token: token, nonce: nonce || '' })
     });
 
     const result = await res.text(); // ממיר לטקסט מה שחזר מהשרת
 
     if (result.includes('בהצלחה')) 
     {
-        // מפרקים את התשובה מהשרת: הודעה|שם|מייל|טוקן
+        // מפרקים את התשובה מהשרת שכוללת הודעה שם מייל וטוקן
         const parts = result.split('|');
         const messageText = parts[0];
         const userFullName = parts[1] || 'משתמש מחובר';
@@ -520,8 +546,12 @@ window.onload = function()
        // מנקה את הטוקן מסרגל הכתובות של הדפדפן
         window.history.replaceState(null, '', window.location.pathname);
 
+        // שליפת ה-nonce החד-פעמי ומחיקתו המיידית מהזיכרון למניעת שימוש חוזר
+        const savedNonce = sessionStorage.getItem('google_nonce') || '';
+        sessionStorage.removeItem('google_nonce');
+
         // שולח להתחברות
-        loginWithGoogle(token);
+        loginWithGoogle(token, savedNonce);
     }
 };
 
@@ -529,13 +559,14 @@ function openGoogle()
 {
     const myPage = window.location.origin + window.location.pathname;
     const randomNonce = Math.random().toString(36).substring(2);
+    sessionStorage.setItem('google_nonce', randomNonce); // שמירת מזהה הבקשה החד-פעמי
 
     const googleUrl = 
         'https://accounts.google.com/o/oauth2/v2/auth' +
         '?client_id=541544347287-kike3l6ru9nuroq4thre6tuvreffa8s2.apps.googleusercontent.com' +
         '&redirect_uri=' + myPage +
         '&response_type=id_token' +
-        '&scope=email profile' +
+        '&scope=openid email profile' +
         '&nonce=' + randomNonce;
 
     window.location.href = googleUrl; // מעביר לקישור

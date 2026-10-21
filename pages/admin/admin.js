@@ -64,8 +64,8 @@ async function checkAdminAuth()
     });
 
     const result = await response.text();
-    // אם הטוקן פג תוקף או אינו תקין מנקים את הזיכרון ומעיפים להתחברות
-    if (result.includes('אינו תקין') === true) 
+    // אם השרת החזיר שגיאה או שהתשובה אינה כוללת תקין מנקים את הזיכרון ומעבירים להתחברות
+    if (response.ok === false || result.includes('תקין') === false) 
     {
         localStorage.clear();
         window.location.replace('../login.html');
@@ -388,11 +388,43 @@ async function editUser(userId)
         cancelButtonText: 'ביטול',
         preConfirm: function() 
         {
+            const fullNameVal = document.getElementById('swalFullName').value.trim();
+            const usernameVal = document.getElementById('swalUsername').value.trim();
+            const emailVal = document.getElementById('swalEmail').value.trim();
+
+            // בדיקה ששדות החובה אינם ריקים
+            if (fullNameVal === '' || usernameVal === '' || emailVal === '')
+            {
+                Swal.showValidationMessage('נא למלא את כל שדות החובה.');
+                return false;
+            }
+
+            // חסימת התו המפריד למניעת שיבוש פרוטוקול התשובות
+            if (fullNameVal.includes('|') || usernameVal.includes('|') || emailVal.includes('|'))
+            {
+                Swal.showValidationMessage('השדות אינם יכולים להכיל את התו |.');
+                return false;
+            }
+
+            // בדיקת תקינות כתובת האימייל
+            if (!emailVal.includes('@'))
+            {
+                Swal.showValidationMessage('כתובת האימייל שהוזנה אינה תקינה.');
+                return false;
+            }
+
+            // בדיקת אורך מינימלי לשם מלא ולשם משתמש
+            if (fullNameVal.length < 2 || usernameVal.length < 3)
+            {
+                Swal.showValidationMessage('אחד או יותר מהשדות קצרים מהמותר.');
+                return false;
+            }
+
             return {
                 id: user.id,
-                full_name: document.getElementById('swalFullName').value.trim(), // מנקה רווחים מהצדדים 
-                username: document.getElementById('swalUsername').value.trim(),
-                email: document.getElementById('swalEmail').value.trim(),
+                full_name: fullNameVal,
+                username: usernameVal,
+                email: emailVal
             };
         }
     });

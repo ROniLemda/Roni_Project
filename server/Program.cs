@@ -19,6 +19,9 @@ var brevoTemplateId = int.Parse(builder.Configuration["Brevo:TemplateId"] ?? "1"
 // שליפת המפתח הסודי של reCAPTCHA
 var recaptchaSecretKey = builder.Configuration["Recaptcha:SecretKey"] ?? "";
 
+// רשימה לניהול מעקב ניסיונות התחברות לפי כתובת IP
+List<IpLogin> ipList = new List<IpLogin>();
+
 // הוספת כלי ה-CORS לארגז הכלים של השרת
 builder.Services.AddCors();
 
@@ -89,50 +92,92 @@ string HashPassword(string password)
     return Convert.ToHexString(hashBytes);
 }
 
-// פונקציה לשליחת קוד אימות במייל באמצעות Brevo
-async Task SendEmail(string email, string code)
+// פונקציית עזר להצפנת קוד אימות חד-פעמי באמצעות מפתח סודי שרתי
+// שרשור מפתח סודי שקיים רק בקוד השרת מונע אפשרות של פיצוח אופליין גם אם מסד הנתונים נחשף
+string HashOtp(string code)
 {
-    using var client = new HttpClient(); // יצירת כלי הדפדפן הפנימי
-    client.DefaultRequestHeaders.Add("api-key", brevoApiKey); // מוסיף כותרת אבטחה של Brevo
+    string serverSecretKey = "HatimaPlus_Security_Key_2026";
+    return HashPassword(code + serverSecretKey);
+}
+    
+// פונקציה לשליחת קוד אימות במייל באמצעות Brevo
+// הפונקציה מחזירה true אם המייל נשלח בהצלחה ו-false אם השליחה נכשלה
+async Task<bool> SendEmail(string email, string code)
+{
+    try
+    {
+        using var client = new HttpClient(); // יצירת כלי הדפדפן הפנימי
+        client.DefaultRequestHeaders.Add("api-key", brevoApiKey); // מוסיף כותרת אבטחה של Brevo
 
-    // יצירת אובייקט נמען והשמת האימייל
-    EmailUser user = new EmailUser();
-    user.email = email;
+        // יצירת אובייקט נמען והשמת האימייל
+        EmailUser user = new EmailUser();
+        user.email = email;
 
-    // יצירת מערך בגודל 1 ושמירת המשתמש בתא הראשון
-    EmailUser[] userList = new EmailUser[1];
-    userList[0] = user;
+        // יצירת מערך בגודל 1 ושמירת המשתמש בתא הראשון
+        EmailUser[] userList = new EmailUser[1];
+        userList[0] = user;
 
-    // יצירת אובייקט והשמת הקוד בן 6 הספרות
-    EmailCode codeData = new EmailCode();
-    codeData.code = code;
+        // יצירת אובייקט והשמת הקוד בן 6 הספרות
+        EmailCode codeData = new EmailCode();
+        codeData.code = code;
 
-    // יצירת הודעת המייל הכוללת
-    EmailMessage message = new EmailMessage();
-    message.to = userList;
-    message.templateId = brevoTemplateId;
-    message.@params = codeData;
+        // יצירת הודעת המייל הכוללת
+        EmailMessage message = new EmailMessage();
+        message.to = userList;
+        message.templateId = brevoTemplateId;
+        message.@params = codeData;
 
-    // שליחת החבילה לאינטרנט
-    var response = await client.PostAsJsonAsync("https://api.brevo.com/v3/smtp/email", message);
-    Console.WriteLine("סטטוס שליחת המייל: " + response.StatusCode);
+        // שליחת החבילה לאינטרנט
+        var response = await client.PostAsJsonAsync("https://api.brevo.com/v3/smtp/email", message);
+        Console.WriteLine("סטטוס שליחת המייל: " + response.StatusCode);
+
+        // בדיקה האם שרת המיילים החזיר קוד הצלחה
+        if (response.IsSuccessStatusCode == true)
+        {
+            return true;
+        }
+
+        return false;
+    }
+    catch
+    {
+        // במקרה של שגיאת תקשורת מחזירים שקר
+        return false;
+    }
 }
 
 //  פונקציה שמקבלת את טופס נתוני הרישום מהאתר ומחזירה הודעת טקסט שההרשמה הצליחה
 async Task<string> RegisterUser(UserRegister data)
 {
     // בדיקה שכל השדות הוזנו כראוי
-    if (data.FullName == null || data.FullName == "" ||
-        data.Username == null || data.Username == "" ||
-        data.Password == null || data.Password == "")
+    if (data.FullName == null || data.Username == null || data.Email == null || data.Password == null)
     {
         return "נא למלא את כל שדות החובה.";
     }
 
-    // בדיקת תקינות אימייל שלא ריק ומכיל שטרודל
-    if (data.Email == null || data.Email == "" || data.Email.Contains('@') == false)
+    // הסרת רווחים מיותרים משדות השם והאימייל
+    data.FullName = data.FullName.Trim();
+    data.Username = data.Username.Trim();
+    data.Email = data.Email.Trim();
+
+    // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
+    // הסיסמה נשמרת בדיוק כפי שהוזנה ללא מחיקת רווחים בקצוות בהתאם לתקן האבטחה
+    if (data.FullName == "" || data.Username == "" || data.Email == "" || data.Password.Trim() == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // בדיקה האם כתובת האימייל מכילה שטרודל
+    // פעולת Contains ב-C# מקבילה לפעולת includes ב-JavaScript
+    if (data.Email.Contains('@') == false)
     {
         return "כתובת האימייל שהוזנה אינה תקינה.";
+    }
+
+    // בדיקה ששדות ההרשמה אינם מכילים את התו המפריד
+    if (data.FullName.Contains('|') || data.Username.Contains('|') || data.Password.Contains('|'))
+    {
+        return "השדות אינם יכולים להכיל את התו |.";
     }
 
     // בדיקת אורך מינימלי בשרת
@@ -147,40 +192,91 @@ async Task<string> RegisterUser(UserRegister data)
         return "אחד או יותר מהשדות שהוזנו ארוכים מהמותר, נא לעדכן את הפרטים ולנסות שוב.";
     }
 
+    // בדיקת מורכבות הסיסמה לקיום אות גדולה ותו מיוחד
+    bool isBig = false;
+    bool isSpecial = false;
+    string specials = "!@#$%^&*()_+-=[]{};':\"\\,.<>/?";
+
+    // לולאה שעוברת על כל תו בסיסמה
+    for (int i = 0; i < data.Password.Length; i++)
+    {
+        char ch = data.Password[i];
+
+        // בדיקה האם התו הוא אות גדולה באנגלית
+        if (ch >= 'A' && ch <= 'Z')
+        {
+            isBig = true;
+        }
+
+        // בדיקה האם התו מופיע ברשימת התווים המיוחדים
+        for (int j = 0; j < specials.Length; j++)
+        {
+            if (ch == specials[j])
+            {
+                isSpecial = true;
+                break;
+            }
+        }
+    }
+
+    // אם חסרה אות גדולה או תו מיוחד מחזירים שגיאה
+    if (isBig == false || isSpecial == false)
+    {
+        return "הסיסמה חייבת להכיל לפחות אות גדולה אחת באנגלית ותו מיוחד אחד.";
+    }
+
     // שולח את הסיסמה הרגילה של המשתמש לפעולת ההצפנה ושומר את הסיסמא המאובטחת
     string hashPass = HashPassword(data.Password);
 
     // הגרלת קוד 6 ספרות באמצעות מחולל מאובטח שלא ניתן לחזות מראש
     // שודרג מ Random.Shared.Next לשמירה על תקן אבטחה גבוה
     string verifyCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
-    string hashedCode = HashPassword(verifyCode);
+    string hashedCode = HashOtp(verifyCode);
     DateTime expireTime = DateTime.UtcNow.AddMinutes(10);
     
     // פתיחת חיבור למסד הנתונים
     using var connection = new NpgsqlConnection(databaseAddress); 
     connection.Open();
 
-    // בדיקה האם שם המשתמש או האימייל כבר קיימים במערכת
-    string checkSql = "SELECT id, is_verified FROM users WHERE email = @email OR username = @user";
-        using var checkCmd = new NpgsqlCommand(checkSql, connection);
-        checkCmd.Parameters.AddWithValue("@email", data.Email);
-        checkCmd.Parameters.AddWithValue("@user", data.Username);
+    // בדיקה האם שם המשתמש או האימייל כבר קיימים במערכת ושליפת תאריך התפוגה של הקוד הקודם
+    string checkSql = "SELECT id, is_verified, reset_code_expires FROM users WHERE email = @email OR username = @user";
+    using var checkCmd = new NpgsqlCommand(checkSql, connection);
+    checkCmd.Parameters.AddWithValue("@email", data.Email);
+    checkCmd.Parameters.AddWithValue("@user", data.Username);
 
-        using var checkReader = checkCmd.ExecuteReader();
-        if (checkReader.Read() == true)
-        {
-           bool isVerified = checkReader.GetBoolean(1);
-           checkReader.Close(); // סוגרים את הקורא כדי שנוכל להמשיך להרשמה
+    using var checkReader = checkCmd.ExecuteReader();
+    if (checkReader.Read() == true)
+    {
+        bool isVerified = checkReader.GetBoolean(1);
 
         // אם המשתמש כבר אומת בעבר חוסמים הרשמה כפולה
         if (isVerified == true)
         {
+            checkReader.Close(); // סגירת הקורא לפני היציאה מהפונקציה
             return "שם המשתמש או כתובת האימייל שהוזנו כבר קיימים במערכת, אנא התחבר לחשבונך.";
         }
 
-        // אם הוא עדיין לא מאומת מעדכנים את הפרטים, מפיקים קוד חדש ומאפסים את מונה הניסיונות
+        // מנגנון הגנה מפני הצפת מיילים בהרשמה חוזרת של חשבון שעדיין לא אומת
+        // בדיקה האם קיים תאריך תפוגה לקוד קודם
+        if (checkReader.IsDBNull(2) == false)
+        {
+            // שליפת זמן התפוגה של הקוד הקודם מהמסד
+            DateTime lastExpires = checkReader.GetDateTime(2);
+
+            // אם נותרו יותר מ9 דקות סימן שעברה פחות מדקה מאז שנשלח הקוד הקודם
+            if (lastExpires > DateTime.UtcNow.AddMinutes(9))
+            {
+                checkReader.Close(); // סגירת הקורא לפני היציאה מהפונקציה
+                return "נשלח כבר קוד אימות לאימייל זה, אנא המתן דקה לפני ניסיון הרשמה נוסף.";
+            }
+        }
+
+        checkReader.Close(); // סגירת הקורא כדי לאפשר פעולות עדכון במסד הנתונים
+
+        // שמירת הפרטים והקוד החדש רק אם עברה לפחות דקה מהקוד הקודם באופן אטומי
+        DateTime cooldownLimit = DateTime.UtcNow.AddMinutes(9);
         string updateSql = "UPDATE users SET full_name = @name, username = @user, password_hash = @pass, " +
-        "reset_code_hash = @code, reset_code_expires = @expires, otp_count = 0 WHERE email = @email";
+        "reset_code_hash = @code, reset_code_expires = @expires, otp_count = 0 WHERE email = @email AND (reset_code_expires IS NULL OR reset_code_expires <= @cooldown)";
         using var updateCmd = new NpgsqlCommand(updateSql, connection);
         updateCmd.Parameters.AddWithValue("@name", data.FullName);
         updateCmd.Parameters.AddWithValue("@user", data.Username);
@@ -188,9 +284,20 @@ async Task<string> RegisterUser(UserRegister data)
         updateCmd.Parameters.AddWithValue("@pass", hashPass);
         updateCmd.Parameters.AddWithValue("@code", hashedCode);
         updateCmd.Parameters.AddWithValue("@expires", expireTime);
-        updateCmd.ExecuteNonQuery(); // מבצע את הפקודה למסד נתונים
+        updateCmd.Parameters.AddWithValue("@cooldown", cooldownLimit);
+        int rows = updateCmd.ExecuteNonQuery();
 
-        await SendEmail(data.Email, verifyCode); // שליחת הקוד למייל דרך Brevo
+        if (rows == 0)
+        {
+            return "נשלח כבר קוד אימות לאימייל זה, אנא המתן דקה לפני ניסיון הרשמה נוסף.";
+        }
+
+        // שליחת הקוד למייל דרך Brevo ובדיקה האם השליחה הצליחה
+        bool isSent = await SendEmail(data.Email, verifyCode);
+        if (isSent == false)
+        {
+            return "שליחת קוד האימות במייל נכשלה, אנא נסה שוב בעוד מספר רגעים.";
+        }
 
         return "נרשמת בהצלחה, קוד אימות בן 6 ספרות נשלח לכתובת האימייל שלך לצורך הפעלת החשבון.";
     }
@@ -208,21 +315,102 @@ async Task<string> RegisterUser(UserRegister data)
     command.Parameters.AddWithValue("@code", hashedCode);
     command.Parameters.AddWithValue("@expires", expireTime);
 
-    // הפעלת הפקודה במסד הנתונים
-    command.ExecuteNonQuery();
+    // הפעלת הפקודה במסד הנתונים עם הגנה מפני רישום כפול במקביל
+    try
+    {
+        // נסיון להכנסת המשתמש החדש לטבלה
+        command.ExecuteNonQuery();
+    }
+    catch
+    {
+        // אם מסד הנתונים חסם את הפעולה כי המשתמש כבר קיים מחזירים הודעה ברורה
+        return "שם המשתמש או כתובת האימייל שהוזנו כבר קיימים במערכת, אנא התחבר לחשבונך.";
+    }
 
-    await SendEmail(data.Email, verifyCode); // שליחת הקוד למייל דרך Brevo
+    // שליחת הקוד למייל דרך Brevo ובדיקה האם השליחה הצליחה
+    bool isNewUserSent = await SendEmail(data.Email, verifyCode);
+    if (isNewUserSent == false)
+    {
+        return "שליחת קוד האימות במייל נכשלה, אנא נסה שוב בעוד מספר רגעים.";
+    }
 
     return "נרשמת בהצלחה, קוד אימות בן 6 ספרות נשלח לכתובת האימייל שלך לצורך הפעלת החשבון.";
 }
 
+// פונקציית עזר למציאת או יצירת רשומת ה-IP ברשימת המעקב
+// שימוש בנעילת lock מבטיח כניסה פעם אחת רק לפעולה 
+IpLogin GetIp(string clientIp)
+{
+    // נעילת הרשימה בעת הגישה כדי למנוע התנגשות בין בקשות מקבילות בשרת
+    lock (ipList)
+    {
+        // ניקוי כתובות ישנות שתקופת החסימה שלהן הסתיימה ואין להן טעויות פעילות לשמירה על יעילות הזיכרון
+        for (int i = ipList.Count - 1; i >= 0; i--)
+        {
+            if (ipList[i].fails == 0 && ipList[i].unblockTime < DateTime.UtcNow)
+            {
+                ipList.RemoveAt(i);
+            }
+        }
+
+        // חיפוש ה-IP ברשימה באמצעות לולאה
+        for (int i = 0; i < ipList.Count; i++)
+        {
+            if (ipList[i].ip == clientIp)
+            {
+                return ipList[i];
+            }
+        }
+
+        // אם ה-IP לא קיים ברשימה יוצרים אובייקט חדש ומוסיפים אותו
+        IpLogin item = new IpLogin();
+        item.ip = clientIp;
+        ipList.Add(item);
+
+        return item;
+    }
+}
+
 // פונקציית התחברות עם אימות דו שלבי (2FA)
-async Task<string> LoginUser(UserLogin data)
+async Task<string> LoginUser(UserLogin data, HttpContext context)
 {
     // בדיקה ששדות האימייל והסיסמה אינם ריקים
-    if (data.Email == null || data.Email == "" || data.Password == null || data.Password == "")
+    if (data.Email == null || data.Password == null)
     {
         return "נא למלא את כל שדות החובה.";
+    }
+
+    // הסרת רווחים מיותרים משדה האימייל
+    data.Email = data.Email.Trim();
+
+    // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
+    if (data.Email == "" || data.Password.Trim() == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // בדיקת אבטחה בשרת לוודא שאף שדה אינו חורג מהאורך המקסימלי המותר
+    if (data.Email.Length > 100 || data.Password.Length > 100)
+    {
+        return "אחד או יותר מהשדות שהוזנו ארוכים מהמותר, נא לעדכן את הפרטים ולנסות שוב.";
+    }
+
+    // שליפת כתובת ה-IP של המחשב שממנו נשלחה הבקשה
+    string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+    // חיפוש הIP ברשימת המעקב באמצעות פונקציית העזר
+    IpLogin currentIp = GetIp(clientIp);
+
+    // בדיקה האם ה-IP חסום כרגע לפי שעון השרת
+    if (currentIp.unblockTime > DateTime.UtcNow)
+    {
+        return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
+    }
+
+    // אם תקופת החסימה הסתיימה מאפסים את המונה כדי לתת 5 ניסיונות חדשים
+    if (currentIp.fails >= 5)
+    {
+        currentIp.fails = 0;
     }
 
     //  פנייה לגוגל לוודא שהאימות אכן אמיתי ולא בוט
@@ -256,6 +444,14 @@ async Task<string> LoginUser(UserLogin data)
     // האם פוסטגרס מצא שורה בכלל
     if (reader.Read() == false)
     {
+        // העלאת מונה הניסיונות השגויים עבור ה-IP הזה
+        currentIp.fails = currentIp.fails + 1;
+        if (currentIp.fails >= 5)
+        {
+            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
+            return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
+        }
+
         return "המשתמש אינו קיים במערכת בדוק את פרטי ההתחברות ונסה שנית.";
     }
 
@@ -273,29 +469,53 @@ async Task<string> LoginUser(UserLogin data)
              return "המשתמש אינו קיים במערכת בדוק את פרטי ההתחברות ונסה שנית.";
         }
 
+        // איפוס מונה הניסיונות השגויים של ה-IP בעקבות התחברות תקינה
+        currentIp.fails = 0;
+
         reader.Close(); // סוגרים את הקורא כדי שנוכל לעדכן את השורה בטבלה
 
         // הפקת קוד אימות חדש בן 6 ספרות באמצעות מחולל מאובטח והצפנתו
         // שודרג מ Random.Shared.Next להגנה מירבית בתהליך ההתחברות הסבר במחברת
         string loginCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
-        string hashedCode = HashPassword(loginCode);
+        string hashedCode = HashOtp(loginCode);
         DateTime expireTime = DateTime.UtcNow.AddMinutes(10); // תוקף ל10 דקות
 
-        // שמירת קוד האימות במסד הנתונים ואיפוס מונה הטעויות
-        string updateSql = "UPDATE users SET reset_code_hash = @code, reset_code_expires = @expire, otp_count = 0 WHERE email = @email";
+        // קביעת זמן צינון מינימלי של דקה בין שליחת קודים
+        DateTime cooldownLimit = DateTime.UtcNow.AddMinutes(9);
+
+        // שמירת קוד האימות במסד הנתונים ואיפוס מונה הטעויות רק אם עברה לפחות דקה מהקוד הקודם באופן אטומי
+        string updateSql = "UPDATE users SET reset_code_hash = @code, reset_code_expires = @expire, otp_count = 0 WHERE email = @email AND (reset_code_expires IS NULL OR reset_code_expires <= @cooldown)";
         using var updateCmd = new NpgsqlCommand(updateSql, connection);
         updateCmd.Parameters.AddWithValue("@code", hashedCode);
         updateCmd.Parameters.AddWithValue("@expire", expireTime);
         updateCmd.Parameters.AddWithValue("@email", userEmail);
-        updateCmd.ExecuteNonQuery(); // מבצע את הפעולה  
+        updateCmd.Parameters.AddWithValue("@cooldown", cooldownLimit);
+        int rows = updateCmd.ExecuteNonQuery();
 
-        // שליחת המייל ל-Brevo
-        await SendEmail(userEmail, loginCode);
+        if (rows == 0)
+        {
+            return "נשלח כבר קוד אימות לאימייל שלך, אנא המתן דקה לפני ניסיון נוסף.";
+        }
+
+        // שליחת המייל ל-Brevo ובדיקה האם השליחה הצליחה
+        bool isSent = await SendEmail(userEmail, loginCode);
+        if (isSent == false)
+        {
+            return "שליחת קוד האימות במייל נכשלה, אנא נסה שוב בעוד מספר רגעים.";
+        }
 
         return "שלחנו קוד אימות בן 6 ספרות לכתובת האימייל שלך לצורך השלמת תהליך ההתחברות.";   
     }
     else
     {
+        // העלאת מונה הניסיונות השגויים עבור ה-IP הזה
+        currentIp.fails = currentIp.fails + 1;
+        if (currentIp.fails >= 5)
+        {
+            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
+            return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
+        }
+
         return "שם המשתמש או הסיסמה שגויים, אנא בדוק את הפרטים ונסה שוב.";  
     }
 }
@@ -303,22 +523,38 @@ async Task<string> LoginUser(UserLogin data)
 async Task<string> CheckUserForReset(UserReset data)
 {
     // בדיקה ששם המשתמש והאימייל אינם ריקים
-    if (data.Username == null || data.Username == "" || data.Email == null || data.Email == "")
+    if (data.Username == null || data.Email == null)
     {
         return "נא למלא את כל שדות החובה.";
+    }
+
+    // הסרת רווחים מיותרים משם המשתמש ומהאימייל
+    data.Username = data.Username.Trim();
+    data.Email = data.Email.Trim();
+
+    // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
+    if (data.Username == "" || data.Email == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // בדיקת אבטחה בשרת לוודא שאף שדה אינו חורג מהאורך המקסימלי המותר
+    if (data.Username.Length > 30 || data.Email.Length > 100)
+    {
+        return "אחד או יותר מהשדות שהוזנו ארוכים מהמותר, נא לעדכן את הפרטים ולנסות שוב.";
     }
 
     // פתיחת חיבור למסד הנתונים
     using var connection = new NpgsqlConnection(databaseAddress);
     connection.Open();
 
-    // בדיקה האם יש משתמש שגם השם וגם האימייל תואמים לו
-    string sql = "SELECT id FROM users WHERE username = @user AND email = @email";
+    // בדיקה האם יש משתמש שגם השם וגם האימייל תואמים לו ושליפת תאריך התפוגה של הקוד הקודם
+    string sql = "SELECT id, reset_code_expires FROM users WHERE username = @user AND email = @email";
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@user", data.Username);
     command.Parameters.AddWithValue("@email", data.Email);
 
-  // מריץ את המשתנה הסופי בטבלה ומקבל בחזרה צינור נתונים כדי לבדוק אם נמצא המשתמש
+    // מריץ את השאילתה בטבלה כדי לבדוק אם המשתמש קיים
     using var reader = command.ExecuteReader();
 
     // אם לא נמצא משתמש כזה
@@ -326,51 +562,130 @@ async Task<string> CheckUserForReset(UserReset data)
     {
         return "הפרטים שהוזנו אינם תואמים לפרטים במערכת, יש לבדוק את הפרטים ולנסות שוב";
     }
-    reader.Close(); // סוגרים את הקורא למסד נתונים כדי שנוכל להריץ פקודת שמירה
+
+    // מנגנון הגנה מפני הצפת אימיילים ובקשות חוזרות מהירות
+    // בדיקה האם כבר הופק קוד אימות בעבר עבור משתמש זה
+    if (reader.IsDBNull(1) == false)
+    {
+        // שליפת זמן התפוגה של הקוד הקודם מהמסד
+        DateTime lastExpires = reader.GetDateTime(1);
+
+        // אם נותרו יותר מ9 דקות עד לפקיעת הקוד סימן שעברה פחות מדקה מהבקשה הקודמת
+        // חסימת הבקשה לצורך מניעת עומס ושמירה על מכסת ההודעות של שירות המיילים
+        if (lastExpires > DateTime.UtcNow.AddMinutes(9))
+        {
+            reader.Close(); // סגירת הקורא לפני היציאה מהפונקציה
+            return "ניתן לבקש קוד חדש רק פעם אחת בדקה, אנא המתן מעט ונסה שנית.";
+        }
+    }
+
+    reader.Close(); // סגירת הקורא למסד נתונים כדי שנוכל להריץ פקודת שמירה
 
     // הגרלת קוד 6 ספרות באמצעות מחולל מאובטח והצפנתו
     // שודרג מ Random.Shared.Next להגנה מירבית בתהליך איפוס סיסמה
     string secretCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
-    string hashedCode = HashPassword(secretCode); // מצפין את הקוד
+    string hashedCode = HashOtp(secretCode); // מצפין את הקוד
     DateTime expireTime = DateTime.UtcNow.AddMinutes(10); // יוצר 10 דק לקוד
 
-    //  שמירת הקוד המוצפן וזמן פקיעתו במסד הנתונים ואיפוס מונה הטעויות
-    string updateSql = "UPDATE users SET reset_code_hash = @code, reset_code_expires = @expire, otp_count = 0 WHERE email = @email";
+    // זמן צינון מינימלי של דקה בין שליחת קודים
+    DateTime cooldownLimit = DateTime.UtcNow.AddMinutes(9);
+
+    // שמירת הקוד המוצפן במסד הנתונים רק אם עברה לפחות דקה מהקוד הקודם באופן אטומי
+    string updateSql = "UPDATE users SET reset_code_hash = @code, reset_code_expires = @expire, otp_count = 0 WHERE email = @email AND (reset_code_expires IS NULL OR reset_code_expires <= @cooldown)";
     using var updateCmd = new NpgsqlCommand(updateSql, connection); 
     updateCmd.Parameters.AddWithValue("@code", hashedCode);
     updateCmd.Parameters.AddWithValue("@expire", expireTime);
     updateCmd.Parameters.AddWithValue("@email", data.Email);
-    updateCmd.ExecuteNonQuery();
+    updateCmd.Parameters.AddWithValue("@cooldown", cooldownLimit);
+    int rows = updateCmd.ExecuteNonQuery();
 
-    await SendEmail(data.Email, secretCode); // שליחת הקוד לפונקצת שליחת מייל דרך Brevo
+    if (rows == 0)
+    {
+        return "ניתן לבקש קוד חדש רק פעם אחת בדקה, אנא המתן מעט ונסה שנית.";
+    }
+
+    // שליחת הקוד למייל דרך Brevo ובדיקה האם השליחה הצליחה
+    bool isSent = await SendEmail(data.Email, secretCode);
+    if (isSent == false)
+    {
+        return "שליחת קוד האימות במייל נכשלה, אנא נסה שוב בעוד מספר רגעים.";
+    }
 
     return "קוד אימות בן 6 ספרות נשלח לכתובת האימייל שלך, אנא הזן אותו בכדי להמשך.";
 }
 
 
-string VerifyResetCode(VerifyCodeRequest data)
+string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
 {
     // בדיקה שקוד האימות והאימייל אינם ריקים
-    if (data.Code == null || data.Code == "" || data.Email == null || data.Email == "")
+    if (data.Code == null || data.Email == null)
     {
         return "נא למלא את כל שדות החובה.";
     }
 
-    //  מצפינים את הקוד שהמשתמש הקליד עכשיו כדי להשוות ל-Hash ששמור
-    string hashedInputCode = HashPassword(data.Code);
+    // הסרת רווחים מיותרים מקוד האימות ומהאימייל
+    data.Code = data.Code.Trim();
+    data.Email = data.Email.Trim();
+
+    // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
+    if (data.Code == "" || data.Email == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // בדיקת אבטחה בשרת לוודא ששדה האימייל אינו חורג מהאורך המקסימלי המותר
+    if (data.Email.Length > 100)
+    {
+        return "אחד או יותר מהשדות שהוזנו ארוכים מהמותר, נא לעדכן את הפרטים ולנסות שוב.";
+    }
+
+    // בדיקה שאורך הקוד הוא בדיוק 6 תווים
+    if (data.Code.Length != 6)
+    {
+        return "קוד האימות שהוזן אינו תקין.";
+    }
+
+    // שליפת כתובת ה-IP של המחשב שממנו נשלחה הבקשה ישירות מחיבור הרשת
+    string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+    // חיפוש ה-IP ברשימת המעקב באמצעות פונקציית העזר
+    IpLogin currentIp = GetIp(clientIp);
+
+    // בדיקה האם ה-IP חסום כרגע לפי שעון השרת למניעת ניחוש קודים
+    if (currentIp.unblockTime > DateTime.UtcNow)
+    {
+        return "בוצעו 5 ניסיונות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות לאמת נחסמה, אנא נסה שוב בעוד מספר דקות.";
+    }
+
+    // אם תקופת החסימה הסתיימה מאפסים את המונה כדי לתת 5 ניסיונות חדשים
+    if (currentIp.fails >= 5)
+    {
+        currentIp.fails = 0;
+    }
+
+    //  מצפינים את הקוד שהמשתמש הקליד עכשיו באמצעות פונקציית העזר כדי להשוות ל-Hash ששמור
+    string hashedInputCode = HashOtp(data.Code);
 
     // פתיחת חיבור למסד הנתונים
     using var connection = new NpgsqlConnection(databaseAddress);
     connection.Open();
 
     // שליפת הקוד השמור וזמן התפוגה וכמות הטעויות לפי האימייל או שם המשתמש
-    string sql = "SELECT reset_code_hash, reset_code_expires, full_name, email, otp_count FROM users WHERE email = @email OR username = @email";
+    string sql = "SELECT reset_code_hash, reset_code_expires, full_name, email, otp_count, is_admin FROM users WHERE email = @email OR username = @email";
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@email", data.Email);
 
     using var reader = command.ExecuteReader();
     if (reader.Read() == false)
     {
+        // העלאת מונה הכישלונות עבור כתובת ה-IP וחסימה במידת הצורך
+        currentIp.fails = currentIp.fails + 1;
+        if (currentIp.fails >= 5)
+        {
+            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
+            return "בוצעו 5 ניסיונות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות לאמת נחסמה, אנא נסה שוב בעוד מספר דקות.";
+        }
+
         return "לא נמצא חשבון המקושר לכתובת אימייל זו. אנא בדוק את הפרטים.";
     }
 
@@ -393,6 +708,13 @@ string VerifyResetCode(VerifyCodeRequest data)
         attempts = reader.GetInt32(4);
     }
 
+    // בדיקה האם המשתמש המאומת הוא מנהל מערכת
+    bool isAdmin = false;
+    if (reader.IsDBNull(5) == false)
+    {
+        isAdmin = reader.GetBoolean(5);
+    }
+
     // בדיקה האם עברו 10 דקות (הקוד פג תוקף)
     if (DateTime.UtcNow > expireTime)
     {
@@ -402,11 +724,31 @@ string VerifyResetCode(VerifyCodeRequest data)
     // בדיקה האם הקוד המוצפן שהוקלד תואם למה ששמור
     if (hashedInputCode != savedHashedCode)
     {
-        reader.Close(); // סוגרים את הקורא כדי שנוכל לבצע פעולת עדכון בטבלה
-        int newAttempts = attempts + 1; // העלאת משתנה הטעויות ב1
+        // העלאת מונה הכישלונות של ה-IP וחסימה ל-5 דקות אם הגיע ל-5
+        currentIp.fails = currentIp.fails + 1;
+        if (currentIp.fails >= 5)
+        {
+            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
+        }
 
-        // אם המשתמש הגיע ל5 טעויות מוחקים את הקוד כדי למנוע ניחושים
-        if (newAttempts >= 5)
+        reader.Close(); // סגירת הקורא כדי לאפשר פעולות עדכון במסד הנתונים
+
+        // קידום מונה הטעויות במסד הנתונים ושליפת הערך המעודכן ישירות
+        string updateSql = "UPDATE users SET otp_count = otp_count + 1 WHERE email = @email OR username = @email RETURNING otp_count";
+        using var updateCmd = new NpgsqlCommand(updateSql, connection);
+        updateCmd.Parameters.AddWithValue("@email", data.Email);
+        using var countReader = updateCmd.ExecuteReader();
+
+        // קריאת המספר החדש והאמיתי שיצא מהמסד
+        int currentAttempts = 0;
+        if (countReader.Read() == true)
+        {
+            currentAttempts = countReader.GetInt32(0);
+        }
+        countReader.Close();
+
+        // בדיקה האם הגענו ל5 טעויות ומחיקת הקוד
+        if (currentAttempts >= 5)
         {
             // מחיקת קוד האימות ואיפוס המשתנה במסד למניעת שימוש חוזר בקוד שנחסם
             string lockSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, otp_count = 0 WHERE email = @email OR username = @email";
@@ -416,22 +758,16 @@ string VerifyResetCode(VerifyCodeRequest data)
 
             return "הזנת קוד שגוי 5 פעמים, למען ביטחונך קוד האימות בוטל ויש להפיק קוד חדש.";
         }
-        else
-        {
-            // שמירת מספר הניסיונות השגויים המעודכן במסד הנתונים
-            string updateSql = "UPDATE users SET otp_count = @count WHERE email = @email OR username = @email";
-            using var updateCmd = new NpgsqlCommand(updateSql, connection);
-            updateCmd.Parameters.AddWithValue("@count", newAttempts);
-            updateCmd.Parameters.AddWithValue("@email", data.Email);
-            updateCmd.ExecuteNonQuery();
 
-            // חישוב כמה ניסיונות נותרו למשתמש לפני שהקוד יימחק
-            int remaining = 5 - newAttempts;
-            return "קוד האימות שהוזן אינו תואם, נותרו לך עוד " + remaining + " ניסיונות לפני חסימת הקוד.";
-        }
+        // חישוב כמה ניסיונות נותרו למשתמש לפני שהקוד יימחק
+        int remaining = 5 - currentAttempts;
+        return "קוד האימות שהוזן אינו תואם, נותרו לך עוד " + remaining + " ניסיונות לפני חסימת הקוד.";
     }
 
-    reader.Close(); // סוגרים את הקורא כי הקוד נמצא נכון ותקין
+    reader.Close(); // סגירת הקורא כי הקוד נמצא נכון ותקין
+
+    // איפוס מונה הכישלונות של ה-IP בעקבות אימות קוד תקין
+    currentIp.fails = 0;
 
     // יצירת טוקן התחברות ייחודי של 32 תווים ללא מקפים שמשמש כרטיס כניסה למערכת
     string authToken = Guid.NewGuid().ToString("N");
@@ -443,12 +779,26 @@ string VerifyResetCode(VerifyCodeRequest data)
     DateTime tokenExpires = DateTime.UtcNow.AddDays(1);
 
     // מחיקת קוד האימות איפוס מונה הטעויות ל0 אימות החשבון ושמירת הטוקן המוצפן
-    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, otp_count = 0, is_verified = true, auth_token = @token, token_expires = @expires WHERE email = @email OR username = @email";
+    // עדכון השורה מתבצע רק אם הקוד עדיין קיים במסד הנתונים כדי למנוע שימוש כפול בקוד
+    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, otp_count = 0, is_verified = true, auth_token = @token, token_expires = @expires WHERE (email = @email OR username = @email) AND reset_code_hash = @expectedHash";
     using var clearCmd = new NpgsqlCommand(clearCodeSql, connection);
     clearCmd.Parameters.AddWithValue("@token", hashedToken);
     clearCmd.Parameters.AddWithValue("@expires", tokenExpires);
     clearCmd.Parameters.AddWithValue("@email", data.Email);
-    clearCmd.ExecuteNonQuery();
+    clearCmd.Parameters.AddWithValue("@expectedHash", savedHashedCode);
+    
+    // בדיקה האם השורה אכן עודכנה במסד הנתונים
+    int rowsAffected = clearCmd.ExecuteNonQuery();
+    if (rowsAffected == 0)
+    {
+        return "קוד האימות כבר נוצל או שאינו בתוקף, יש לבקש קוד חדש.";
+    }
+
+    // אם המשתמש שביצע אימות הוא מנהל מערכת רושמים את פעולת ההתחברות ביומן
+    if (isAdmin == true)
+    {
+        SaveAdminLog("התחברות מנהל", "מנהל מערכת (" + fullName + ") התחבר למערכת בהצלחה");
+    }
 
     return "זהותך אומתה בהצלחה, הנך מועבר כעת לקביעת הסיסמה החדשה.|" + fullName + "|" + verifiedEmail + "|" + authToken;
 }
@@ -457,9 +807,24 @@ string VerifyResetCode(VerifyCodeRequest data)
 async Task<string> ResendCode(ResendCodeRequest data)
 {
     // בדיקה ששדה האימייל או שם המשתמש אינו ריק
-    if (data.Email == null || data.Email == "")
+    if (data.Email == null)
     {
         return "נא למלא את כל שדות החובה.";
+    }
+
+    // הסרת רווחים מיותרים מהשדה
+    data.Email = data.Email.Trim();
+
+    // בדיקה שלא הוזנו רווחים בלבד
+    if (data.Email == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // בדיקת אבטחה בשרת לוודא ששדה האימייל אינו חורג מהאורך המקסימלי המותר
+    if (data.Email.Length > 100)
+    {
+        return "אחד או יותר מהשדות שהוזנו ארוכים מהמותר, נא לעדכן את הפרטים ולנסות שוב.";
     }
 
     // פתיחת צינור התקשורת מול מסד הנתונים
@@ -503,22 +868,35 @@ async Task<string> ResendCode(ResendCodeRequest data)
     // הגרלת קוד חדש בן 6 ספרות באמצעות מחולל אקראי קריפטוגרפי שלא ניתן לניחוש
     string newCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
 
-    // הצפנת הקוד בשיטת SHA256 כך שבמסד הנתונים יישמר רק ערך מוצפן
-    string hashedCode = HashPassword(newCode);
+    // הצפנת הקוד בשיטת SHA256 יחד עם המפתח הסודי השרתי כך שבמסד יישמר ערך מוגן שלא ניתן לפענוח אופליין
+    string hashedCode = HashOtp(newCode);
 
     // קביעת תוקף חדש ל 10 דקות מרגע זה לפי שעון עולמי
     DateTime expireTime = DateTime.UtcNow.AddMinutes(10);
 
-    // שמירת הקוד המוצפן החדש תאריך התפוגה ואיפוס מונה הטעויות ל 0
-    string updateSql = "UPDATE users SET reset_code_hash = @code, reset_code_expires = @expire, otp_count = 0 WHERE email = @email";
+    // קביעת זמן צינון מינימלי של דקה בין בקשות
+    DateTime cooldownLimit = DateTime.UtcNow.AddMinutes(9);
+
+    // שמירת הקוד המוצפן החדש תאריך התפוגה ואיפוס מונה הטעויות רק אם עברה לפחות דקה מהקוד הקודם באופן אטומי
+    string updateSql = "UPDATE users SET reset_code_hash = @code, reset_code_expires = @expire, otp_count = 0 WHERE email = @email AND (reset_code_expires IS NULL OR reset_code_expires <= @cooldown)";
     using var updateCmd = new NpgsqlCommand(updateSql, connection);
     updateCmd.Parameters.AddWithValue("@code", hashedCode);
     updateCmd.Parameters.AddWithValue("@expire", expireTime);
     updateCmd.Parameters.AddWithValue("@email", realEmail);
-    updateCmd.ExecuteNonQuery(); // ביצוע פעולת העדכון בפועל בטבלת המשתמשים
+    updateCmd.Parameters.AddWithValue("@cooldown", cooldownLimit);
+    int rows = updateCmd.ExecuteNonQuery();
 
-    // שליחת הודעת הדואל עם הקוד הגלוי דרך שרת Brevo
-    await SendEmail(realEmail, newCode);
+    if (rows == 0)
+    {
+        return "ניתן לבקש קוד חדש רק פעם אחת בדקה, אנא המתן מעט ונסה שנית.";
+    }
+
+    // שליחת הודעת הדואל עם הקוד הגלוי דרך שרת Brevo ובדיקה האם השליחה הצליחה
+    bool isSent = await SendEmail(realEmail, newCode);
+    if (isSent == false)
+    {
+        return "שליחת קוד האימות במייל נכשלה, אנא נסה שוב בעוד מספר רגעים.";
+    }
 
     // החזרת הודעת אישור למשתמש
     return "קוד אימות חדש נשלח לכתובת האימייל שלך לתשומת ליבך, תוקף הקוד הינו ל-10 דקות בלבד.";
@@ -527,17 +905,70 @@ async Task<string> ResendCode(ResendCodeRequest data)
 string UpdatePassword(UpdatePasswordRequest data)
 {
     // בדיקה שכל השדות הוזנו כראוי
-    if (data.Email == null || data.Email == "" || 
-        data.NewPassword == null || data.NewPassword == "" || 
-        data.Token == null || data.Token == "")
+    if (data.Email == null || data.NewPassword == null || data.Token == null)
     {
         return "נא למלא את כל שדות החובה.";
     }
 
-    // בדיקת אורך מינימלי לסיסמה החדשה
-    if (data.NewPassword.Length < 6)
+    // הסרת רווחים מיותרים משדה האימייל והטוקן
+    data.Email = data.Email.Trim();
+    data.Token = data.Token.Trim();
+
+    // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
+    if (data.Email == "" || data.NewPassword.Trim() == "" || data.Token == "")
     {
-        return "הסיסמה החדשה חייבת להכיל לפחות 6 תווים.";
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // בדיקת אבטחה בשרת לוודא ששדה האימייל והטוקן אינם חורגים מהאורך המקסימלי המותר
+    if (data.Email.Length > 100 || data.Token.Length > 100)
+    {
+        return "אחד או יותר מהשדות שהוזנו ארוכים מהמותר, נא לעדכן את הפרטים ולנסות שוב.";
+    }
+
+    // בדיקת אורך מינימלי ומקסימלי לסיסמה החדשה
+    if (data.NewPassword.Length < 6 || data.NewPassword.Length > 100)
+    {
+        return "הסיסמה החדשה חייבת להכיל בין 6 ל-100 תווים.";
+    }
+
+    // בדיקה שהסיסמה החדשה אינה מכילה את התו המפריד
+    if (data.NewPassword.Contains('|'))
+    {
+        return "הסיסמה החדשה אינה יכולה להכיל את התו |.";
+    }
+
+    // בדיקת מורכבות הסיסמה לקיום אות גדולה ותו מיוחד
+    bool isBig = false;
+    bool isSpecial = false;
+    string specials = "!@#$%^&*()_+-=[]{};':\"\\,.<>/?";
+
+    // לולאה שעוברת על כל תו בסיסמה החדשה
+    for (int i = 0; i < data.NewPassword.Length; i++)
+    {
+        char ch = data.NewPassword[i];
+
+        // בדיקה האם התו הוא אות גדולה באנגלית
+        if (ch >= 'A' && ch <= 'Z')
+        {
+            isBig = true;
+        }
+
+        // בדיקה האם התו מופיע ברשימת התווים המיוחדים
+        for (int j = 0; j < specials.Length; j++)
+        {
+            if (ch == specials[j])
+            {
+                isSpecial = true;
+                break;
+            }
+        }
+    }
+
+    // אם חסרה אות גדולה או תו מיוחד מחזירים שגיאה
+    if (isBig == false || isSpecial == false)
+    {
+        return "הסיסמה חייבת להכיל לפחות אות גדולה אחת באנגלית ותו מיוחד אחד.";
     }
 
     // מצפינים את הסיסמה החדשה ב-SHA-256
@@ -566,8 +997,33 @@ string UpdatePassword(UpdatePasswordRequest data)
 }
 
 // התחברות עם גוגל
-async Task<string> GoogleLogin(GoogleLoginRequest data)
+async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
 {
+    // בדיקה ששדות החובה אינם ריקים
+    if (data.Token == null || data.Nonce == null)
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // הסרת רווחים מיותרים משדות הקלט
+    data.Token = data.Token.Trim();
+    data.Nonce = data.Nonce.Trim();
+
+    // בדיקת אבטחה בשרת לוודא שאף שדה אינו ריק או חורג מהאורך המקסימלי
+    if (data.Token == "" || data.Token.Length > 2048 || data.Nonce.Length > 100)
+    {
+        return "אימות החשבון מול Google נכשל, נתונים לא תקינים.";
+    }
+
+    // שליפת כתובת ה-IP ובדיקת חסימה למניעת הצפת קריאות לשירות גוגל
+    string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+    IpLogin currentIp = GetIp(clientIp);
+
+    if (currentIp.unblockTime > DateTime.UtcNow)
+    {
+        return "בוצעו מספר רב של ניסיונות, לצורכי אבטחה האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
+    }
+
     string email = "";
     string name = "";
     try
@@ -580,18 +1036,41 @@ async Task<string> GoogleLogin(GoogleLoginRequest data)
         // קריאת האימייל והשם מתוך התשובה של גוגל
         using var jsonDoc = JsonDocument.Parse(googleResponse);
 
-        // בדיקת אבטחה: מוודאים שהטוקן הופק ספציפית עבור האתר שלנו ולא עבור אפליקציה זרה
+        // בדיקת אבטחה שמוודאת שהטוקן הופק ספציפית עבור האתר שלנו ולא עבור אפליקציה זרה
         string audience = jsonDoc.RootElement.GetProperty("aud").GetString() ?? "";
         if (audience != "541544347287-kike3l6ru9nuroq4thre6tuvreffa8s2.apps.googleusercontent.com")
         {
             return "אימות החשבון מול Google נכשל, מזהה אפליקציה לא מורשה.";
         }
 
+        // שליפת שדה האימות של גוגל שמוודא שהמשתמש הוא הבעלים האמיתי של כתובת המייל הזו
+        // המערכת בודקת שגוגל אימתה את כתובת האימייל כדי למנוע התחברות עם חשבונות מזויפים
+        string isVerified = jsonDoc.RootElement.GetProperty("email_verified").GetString() ?? "";
+        if (isVerified != "true")
+        {
+            return "כתובת האימייל בחשבון Google אינה מאומתת.";
+        }
+
+        // שליפת מזהה הבקשה מתוך התשובה של גוגל
+        string tokenNonce = jsonDoc.RootElement.GetProperty("nonce").GetString() ?? "";
+
+        // בדיקת אבטחה שמוודאת שהמספר שהדפדפן שלח תואם למה שגוגל חתמה
+        if (data.Nonce == "" || tokenNonce != data.Nonce)
+        {
+            return "אימות החשבון מול Google נכשל, מזהה בקשה אינו תואם.";
+        }
+
         email = jsonDoc.RootElement.GetProperty("email").GetString() ?? ""; // שולפים את המייל המלא של המשתמש 
         name = jsonDoc.RootElement.GetProperty("name").GetString() ?? ""; // שולפים את השם המלא של המשתמש
+        name = name.Replace("|", ""); // הסרת התו המפריד משם המשתמש אם קיים בגוגל
     }
     catch
     {
+        currentIp.fails = currentIp.fails + 1;
+        if (currentIp.fails >= 5)
+        {
+            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
+        }
         return "אימות החשבון מול Google נכשל, אנא נסה שנית.";
     }
 
@@ -609,15 +1088,27 @@ async Task<string> GoogleLogin(GoogleLoginRequest data)
     DateTime tokenExpires = DateTime.UtcNow.AddDays(1);
 
     // בדיקה האם המשתמש כבר קיים בטבלה
-    string checkSql = "SELECT id FROM users WHERE email = @email";
+    string checkSql = "SELECT id, is_admin FROM users WHERE email = @email";
     using var checkCmd = new NpgsqlCommand(checkSql, connection);
     checkCmd.Parameters.AddWithValue("@email", email);
     
     using var reader = checkCmd.ExecuteReader();
-    if (reader.Read() == true)
+    bool userExists = reader.Read();
+    bool isExistingAdmin = false;
+
+    if (userExists == true)
     {
-        reader.Close();
-        
+        if (reader.IsDBNull(1) == false)
+        {
+            isExistingAdmin = reader.GetBoolean(1);
+        }
+    }
+
+    // סגירת הקורא בכל מצב כדי לפנות את צינור התקשורת להמשך הפעולות במסד
+    reader.Close();
+
+    if (userExists == true)
+    {
         // עדכון הטוקן המוצפן בטבלה למשתמש קיים
         string updateSql = "UPDATE users SET auth_token = @token, token_expires = @expires WHERE email = @email";
         using var updateCmd = new NpgsqlCommand(updateSql, connection);
@@ -625,6 +1116,15 @@ async Task<string> GoogleLogin(GoogleLoginRequest data)
         updateCmd.Parameters.AddWithValue("@expires", tokenExpires);
         updateCmd.Parameters.AddWithValue("@email", email);
         updateCmd.ExecuteNonQuery();
+
+        // אם המשתמש שהתחבר דרך גוגל הוא מנהל מערכת רושמים זאת ביומן הפעולות
+        if (isExistingAdmin == true)
+        {
+            SaveAdminLog("התחברות מנהל", "מנהל מערכת (" + name + ") התחבר למערכת דרך Google");
+        }
+
+        // איפוס מונה הכישלונות של ה-IP בעקבות התחברות מוצלחת
+        currentIp.fails = 0;
 
         return "ההתחברות באמצעות Google בוצעה בהצלחה, לחץ המשך על מנת לעבור לסביבת העבודה שלך.|" + name + "|" + email + "|" + authToken;
     }
@@ -680,6 +1180,9 @@ async Task<string> GoogleLogin(GoogleLoginRequest data)
     insertCmd.Parameters.AddWithValue("@token", hashedToken);
     insertCmd.Parameters.AddWithValue("@expires", tokenExpires);
     insertCmd.ExecuteNonQuery();
+
+    // איפוס מונה הכישלונות של ה-IP בעקבות התחברות מוצלחת
+    currentIp.fails = 0;
 
     return "החשבון נוצר בהצלחה באמצעות Google, מיד תועבר לסביבת העבודה שלך.|" + name + "|" + email + "|" + authToken;
 }
@@ -884,6 +1387,47 @@ string UpdateAdminUser(UpdateAdminUserRequest data)
         return "גישה נדחתה, אין לך את ההרשאות המתאימות לביצוע הפעולה המבוקשת.";
     }
 
+    // בדיקה ששדות החובה אינם ריקים
+    if (data.Full_name == null || data.Username == null || data.Email == null)
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // הסרת רווחים מיותרים משדות הקלט
+    data.Full_name = data.Full_name.Trim();
+    data.Username = data.Username.Trim();
+    data.Email = data.Email.Trim();
+
+    // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
+    if (data.Full_name == "" || data.Username == "" || data.Email == "")
+    {
+        return "נא למלא את כל שדות החובה.";
+    }
+
+    // בדיקה האם כתובת האימייל מכילה שטרודל
+    if (data.Email.Contains('@') == false)
+    {
+        return "כתובת האימייל שהוזנה אינה תקינה.";
+    }
+
+    // בדיקה ששדות המשתמש אינם מכילים את התו המפריד
+    if (data.Full_name.Contains('|') || data.Username.Contains('|') || data.Email.Contains('|'))
+    {
+        return "השדות אינם יכולים להכיל את התו |.";
+    }
+
+    // בדיקת אורך מינימלי בשרת
+    if (data.Full_name.Length < 2 || data.Username.Length < 3)
+    {
+        return "אחד או יותר מהשדות קצרים מהמותר.";
+    }
+
+    // בדיקת אבטחה בשרת לוודא שאף שדה אינו חורג מהאורך המקסימלי המותר
+    if (data.Full_name.Length > 50 || data.Username.Length > 30 || data.Email.Length > 100)
+    {
+        return "אחד או יותר מהשדות שהוזנו ארוכים מהמותר, נא לעדכן את הפרטים ולנסות שוב.";
+    }
+
     // פתיחת צינור התקשורת למסד הנתונים
     using var connection = new NpgsqlConnection(databaseAddress);
     connection.Open();
@@ -908,20 +1452,27 @@ string UpdateAdminUser(UpdateAdminUserRequest data)
 // פונקציה לשמירת שורת פעולה חדשה ביומן המנהל במסד הנתונים
 void SaveAdminLog(string actionType, string details)
 {
-    // פתיחת צינור תקשורת מול מסד הנתונים
-    using var connection = new NpgsqlConnection(databaseAddress);
-    connection.Open();
+    try
+    {
+        // פתיחת צינור תקשורת מול מסד הנתונים
+        using var connection = new NpgsqlConnection(databaseAddress);
+        connection.Open();
 
-    // פקודת SQL להכנסת שורה חדשה לטבלת admin_logs
-    // התאריך נכנס לבד אוטומטית
-    string sql = "INSERT INTO admin_logs (action_type, details) VALUES (@type, @details)";
-    using var command = new NpgsqlCommand(sql, connection);
+        // פקודת SQL להכנסת שורה חדשה לטבלת admin_logs
+        // התאריך נכנס לבד אוטומטית
+        string sql = "INSERT INTO admin_logs (action_type, details) VALUES (@type, @details)";
+        using var command = new NpgsqlCommand(sql, connection);
 
-    command.Parameters.AddWithValue("@type", actionType);
-    command.Parameters.AddWithValue("@details", details);
+        command.Parameters.AddWithValue("@type", actionType);
+        command.Parameters.AddWithValue("@details", details);
 
-    // הרצת הפקודה ושמירת השורה בפועל
-    command.ExecuteNonQuery();
+        // הרצת הפקודה ושמירת השורה בפועל
+        command.ExecuteNonQuery();
+    }
+    catch
+    {
+        // במקרה של שגיאה זמנית ברישום היומן ממשיכים כרגיל
+    }
 }
 
 // פונקציה לשליפת יומן הפעולות האחרונות ממסד הנתונים
@@ -993,7 +1544,6 @@ bool CheckIsAdmin(string token)
     // מחזיר האם הוא מנהל (true או false)
     return reader.GetBoolean(0) == true;
 }
-
 
 
 // פותח את דף הבית הראשי של השרת ומפעיל את הפונקציה למעלה כדי להציג את המשפט
@@ -1069,10 +1619,11 @@ class UpdatePasswordRequest
     public string Token { get; set; } = ""; // הטוקן שנוצר באימות הקוד
 }
 
-// מחלקה לקליטת טוקן ההתחברות מגוגל
+// מחלקה לקליטת טוקן ההתחברות ומזהה הבקשה מגוגל
 class GoogleLoginRequest
 {
     public string Token { get; set; } = "";
+    public string Nonce { get; set; } = "";
 }
 
 
@@ -1147,4 +1698,13 @@ class AdminLogItem
     public string action_type { get; set; } = "";
     public string details { get; set; } = "";
     public string created_at { get; set; } = "";
+}
+
+// מחלקה לניהול מעקב ניסיונות התחברות לפי כתובת IP
+class IpLogin
+{
+    public string ip { get; set; } = "";
+    public int fails { get; set; } = 0;
+    // זמן סיום החסימה לפי שעון השרת
+    public DateTime unblockTime { get; set; }
 }
