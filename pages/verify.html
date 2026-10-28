@@ -146,7 +146,7 @@ verifyForm.onsubmit = async function(e)
 
     // שליפת האימייל מתוך הכתובת של הדפדפן (URL)
     const urlParams = new URLSearchParams(window.location.search);
-    const userEmail = urlParams.get('email');
+    const userEmail = (urlParams.get('email') || '').trim().toLowerCase();
 
     // אריזת האימייל והקוד לחבילת נתונים
     const verifyData = 
@@ -308,9 +308,9 @@ newPasswordForm.onsubmit = async function(e)
         return; // יוצא כאשר יש שגיאה כל שהיא
     }
 
-      // שליפת האימייל מה URL
+      // שליפת האימייל מה URL והמרתו לאותיות קטנות
       const urlParams = new URLSearchParams(window.location.search);
-      const userEmail = urlParams.get('email');
+      const userEmail = (urlParams.get('email') || '').trim().toLowerCase();
 
     // אריזת הנתונים
       const updateData = 
@@ -380,9 +380,9 @@ resendBtn.onclick = async function(e)
 
     isWaiting = true; // נעילת הכפתור מיד למניעת לחיצה כפולה ושליחה כפולה ברשת
 
-    // שליפת האימייל מה URL
+    // שליפת האימייל מה URL והמרתו לאותיות קטנות
     const urlParams = new URLSearchParams(window.location.search);
-    const userEmail = urlParams.get('email');
+    const userEmail = (urlParams.get('email') || '').trim().toLowerCase();
 
     try
     {

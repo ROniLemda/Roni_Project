@@ -170,9 +170,9 @@ async Task<string> RegisterUser(UserRegister data, HttpContext context)
         return "בוצעו מספר רב של בקשות ממחשב זה, אנא המתן 15 שניות לפני ניסיון נוסף.";
     }
 
-    // הסרת רווחים מיותרים משדות השם והאימייל
+    // הסרת רווחים מיותרים משדות השם והאימייל והמרת שם המשתמש והאימייל לאותיות קטנות
     data.FullName = data.FullName.Trim();
-    data.Username = data.Username.Trim();
+    data.Username = data.Username.Trim().ToLower();
     data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
@@ -260,7 +260,7 @@ async Task<string> RegisterUser(UserRegister data, HttpContext context)
     connection.Open();
 
     // בדיקה האם שם המשתמש או האימייל כבר קיימים במערכת ושליפת תאריך התפוגה של הקוד הקודם
-    string checkSql = "SELECT id, is_verified, reset_code_expires FROM users WHERE email = @email OR username = @user";
+    string checkSql = "SELECT id, is_verified, reset_code_expires FROM users WHERE email = @email OR LOWER(username) = @user";
     using var checkCmd = new NpgsqlCommand(checkSql, connection);
     checkCmd.Parameters.AddWithValue("@email", data.Email);
     checkCmd.Parameters.AddWithValue("@user", data.Username);
@@ -388,10 +388,20 @@ IpLogin GetIp(string clientIp)
         item.ip = clientIp;
         ipList.Add(item);
 
-        // הגבלת כמות הכתובות המקסימלית בזיכרון להגנה מפני הצפה
+        // הגבלת כמות הכתובות המקסימלית בזיכרון תוך העדפת הסרת כתובת שאינה חסומה
         if (ipList.Count > 1000)
         {
-            ipList.RemoveAt(0);
+            int indexToRemove = 0;
+            // חיפוש הרשומה הראשונה שאינה חסומה כרגע
+            for (int i = 0; i < ipList.Count; i++)
+            {
+                if (ipList[i].unblockTime <= DateTime.UtcNow)
+                {
+                    indexToRemove = i;
+                    break;
+                }
+            }
+            ipList.RemoveAt(indexToRemove);
         }
 
         return item;
@@ -548,7 +558,7 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
     connection.Open();
 
     // שולפים את הסיסמה, סטטוס האימות ואת האימייל האמיתי (גם אם התחבר עם שם משתמש)
-    string sql = "SELECT password_hash, is_verified, email FROM users WHERE email = @loginInput OR username = @loginInput"; 
+    string sql = "SELECT password_hash, is_verified, email FROM users WHERE email = @loginInput OR LOWER(username) = @loginInput"; 
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@loginInput", data.Email);
     
@@ -640,8 +650,8 @@ async Task<string> CheckUserForReset(UserReset data)
         return "נא למלא את כל שדות החובה.";
     }
 
-    // הסרת רווחים מיותרים משם המשתמש ומהאימייל
-    data.Username = data.Username.Trim();
+    // הסרת רווחים מיותרים משם המשתמש ומהאימייל והמרה לאותיות קטנות
+    data.Username = data.Username.Trim().ToLower();
     data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
@@ -661,7 +671,7 @@ async Task<string> CheckUserForReset(UserReset data)
     connection.Open();
 
     // בדיקה האם יש משתמש שגם השם וגם האימייל תואמים לו ושליפת תאריך התפוגה של הקוד הקודם
-    string sql = "SELECT id, reset_code_expires FROM users WHERE username = @user AND email = @email";
+    string sql = "SELECT id, reset_code_expires FROM users WHERE LOWER(username) = @user AND email = @email";
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@user", data.Username);
     command.Parameters.AddWithValue("@email", data.Email);
@@ -777,7 +787,7 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
     connection.Open();
 
     // שליפת הקוד השמור וזמן התפוגה וכמות הטעויות לפי האימייל או שם המשתמש
-    string sql = "SELECT reset_code_hash, reset_code_expires, full_name, email, otp_count, is_admin FROM users WHERE email = @email OR username = @email";
+    string sql = "SELECT reset_code_hash, reset_code_expires, full_name, email, otp_count, is_admin FROM users WHERE email = @email OR LOWER(username) = @email";
     using var command = new NpgsqlCommand(sql, connection);
     command.Parameters.AddWithValue("@email", data.Email);
 
@@ -852,7 +862,7 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
         if (currentAttempts >= 5)
         {
             // מחיקת קוד האימות ואיפוס המשתנה במסד למניעת שימוש חוזר בקוד שנחסם
-            string lockSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, otp_count = 0 WHERE email = @email OR username = @email";
+            string lockSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, otp_count = 0 WHERE email = @email OR LOWER(username) = @email";
             using var lockCmd = new NpgsqlCommand(lockSql, connection);
             lockCmd.Parameters.AddWithValue("@email", data.Email);
             lockCmd.ExecuteNonQuery();
@@ -881,7 +891,7 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
 
     // מחיקת קוד האימות איפוס מונה הטעויות ל0 אימות החשבון ושמירת הטוקן המוצפן
     // עדכון השורה מתבצע רק אם הקוד עדיין קיים במסד הנתונים כדי למנוע שימוש כפול בקוד
-    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, otp_count = 0, is_verified = true, auth_token = @token, token_expires = @expires WHERE (email = @email OR username = @email) AND reset_code_hash = @expectedHash";
+    string clearCodeSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, otp_count = 0, is_verified = true, auth_token = @token, token_expires = @expires WHERE (email = @email OR LOWER(username) = @email) AND reset_code_hash = @expectedHash";
     using var clearCmd = new NpgsqlCommand(clearCodeSql, connection);
     clearCmd.Parameters.AddWithValue("@token", hashedToken);
     clearCmd.Parameters.AddWithValue("@expires", tokenExpires);
@@ -942,7 +952,7 @@ async Task<string> ResendCode(ResendCodeRequest data, HttpContext context)
     connection.Open();
 
     // שליפת מזהה המשתמש תאריך התפוגה וכתובת האימייל האמיתית לצורך בדיקת קצב הבקשות
-    string checkSql = "SELECT id, reset_code_expires, email FROM users WHERE email = @loginInput OR username = @loginInput";
+    string checkSql = "SELECT id, reset_code_expires, email FROM users WHERE email = @loginInput OR LOWER(username) = @loginInput";
     using var checkCmd = new NpgsqlCommand(checkSql, connection); // צינור פקודה מאובטח למניעת הזרקות קוד
     checkCmd.Parameters.AddWithValue("@loginInput", data.Email);
 
@@ -1020,8 +1030,8 @@ string UpdatePassword(UpdatePasswordRequest data)
         return "נא למלא את כל שדות החובה.";
     }
 
-    // הסרת רווחים מיותרים משדה האימייל והטוקן
-    data.Email = data.Email.Trim();
+    // הסרת רווחים מיותרים משדה האימייל והטוקן והמרת האימייל לאותיות קטנות
+    data.Email = data.Email.Trim().ToLower();
     data.Token = data.Token.Trim();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
@@ -1525,9 +1535,9 @@ string UpdateAdminUser(UpdateAdminUserRequest data)
         return "נא למלא את כל שדות החובה.";
     }
 
-    // הסרת רווחים מיותרים משדות הקלט
+    // הסרת רווחים מיותרים משדות הקלט והמרת שם המשתמש והאימייל לאותיות קטנות
     data.Full_name = data.Full_name.Trim();
-    data.Username = data.Username.Trim();
+    data.Username = data.Username.Trim().ToLower();
     data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
