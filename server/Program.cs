@@ -189,6 +189,12 @@ async Task<string> RegisterUser(UserRegister data, HttpContext context)
         return "כתובת האימייל שהוזנה אינה תקינה.";
     }
 
+    // בדיקה ששם המשתמש אינו מכיל שטרודל למניעת התנגשות עם כתובות אימייל
+    if (data.Username.Contains('@'))
+    {
+        return "שם משתמש אינו יכול להכיל את התו @.";
+    }
+
     // בדיקה שכתובת האימייל אינה מכילה רווחים פנימיים
     if (data.Email.Contains(' '))
     {
@@ -259,8 +265,8 @@ async Task<string> RegisterUser(UserRegister data, HttpContext context)
     using var connection = new NpgsqlConnection(databaseAddress); 
     connection.Open();
 
-    // בדיקה האם שם המשתמש או האימייל כבר קיימים במערכת ושליפת תאריך התפוגה של הקוד הקודם
-    string checkSql = "SELECT id, is_verified, reset_code_expires FROM users WHERE email = @email OR LOWER(username) = @user";
+    // בדיקה האם שם המשתמש או האימייל כבר קיימים במערכת כולל בדיקה צולבת ושליפת תאריך התפוגה של הקוד הקודם
+    string checkSql = "SELECT id, is_verified, reset_code_expires FROM users WHERE email = @email OR LOWER(username) = @user OR email = @user OR LOWER(username) = @email";
     using var checkCmd = new NpgsqlCommand(checkSql, connection);
     checkCmd.Parameters.AddWithValue("@email", data.Email);
     checkCmd.Parameters.AddWithValue("@user", data.Username);
@@ -1555,6 +1561,12 @@ string UpdateAdminUser(UpdateAdminUserRequest data)
     if (data.Email.Contains('@') == false)
     {
         return "כתובת האימייל שהוזנה אינה תקינה.";
+    }
+
+    // בדיקה ששם המשתמש אינו מכיל שטרודל למניעת התנגשות עם כתובות אימייל
+    if (data.Username.Contains('@'))
+    {
+        return "שם משתמש אינו יכול להכיל את התו @.";
     }
 
     // בדיקה שכתובת האימייל אינה מכילה רווחים פנימיים
