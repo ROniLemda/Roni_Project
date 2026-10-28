@@ -164,7 +164,7 @@ async Task<string> RegisterUser(UserRegister data)
     // הסרת רווחים מיותרים משדות השם והאימייל
     data.FullName = data.FullName.Trim();
     data.Username = data.Username.Trim();
-    data.Email = data.Email.Trim();
+    data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
     // הסיסמה נשמרת בדיוק כפי שהוזנה ללא מחיקת רווחים בקצוות בהתאם לתקן האבטחה
@@ -178,6 +178,12 @@ async Task<string> RegisterUser(UserRegister data)
     if (data.Email.Contains('@') == false)
     {
         return "כתובת האימייל שהוזנה אינה תקינה.";
+    }
+
+    // בדיקה שכתובת האימייל אינה מכילה רווחים פנימיים
+    if (data.Email.Contains(' '))
+    {
+        return "כתובת האימייל אינה יכולה להכיל רווחים.";
     }
 
     // בדיקה ששדות ההרשמה אינם מכילים את התו המפריד
@@ -436,8 +442,8 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
         return "נא למלא את כל שדות החובה.";
     }
 
-    // הסרת רווחים מיותרים משדה האימייל
-    data.Email = data.Email.Trim();
+    // הסרת רווחים מיותרים והמרה לאותיות קטנות
+    data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
     if (data.Email == "" || data.Password.Trim() == "")
@@ -578,7 +584,7 @@ async Task<string> CheckUserForReset(UserReset data)
 
     // הסרת רווחים מיותרים משם המשתמש ומהאימייל
     data.Username = data.Username.Trim();
-    data.Email = data.Email.Trim();
+    data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
     if (data.Username == "" || data.Email == "")
@@ -673,7 +679,7 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
 
     // הסרת רווחים מיותרים מקוד האימות ומהאימייל
     data.Code = data.Code.Trim();
-    data.Email = data.Email.Trim();
+    data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
     if (data.Code == "" || data.Email == "")
@@ -849,8 +855,8 @@ async Task<string> ResendCode(ResendCodeRequest data)
         return "נא למלא את כל שדות החובה.";
     }
 
-    // הסרת רווחים מיותרים מהשדה
-    data.Email = data.Email.Trim();
+    // הסרת רווחים מיותרים והמרה לאותיות קטנות
+    data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו רווחים בלבד
     if (data.Email == "")
@@ -1125,7 +1131,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
         email = jsonDoc.RootElement.GetProperty("email").GetString() ?? ""; // שולפים את המייל המלא של המשתמש 
         name = jsonDoc.RootElement.GetProperty("name").GetString() ?? ""; // שולפים את השם המלא של המשתמש
         name = name.Replace("|", ""); // הסרת התו המפריד משם המשתמש אם קיים בגוגל
-        email = email.Replace("|", ""); // הסרת התו המפריד מכתובת האימייל אם קיים בגוגל
+        email = email.Replace("|", "").ToLower(); // הסרת התו המפריד והמרה לאותיות קטנות
     }
     catch
     {
@@ -1455,7 +1461,7 @@ string UpdateAdminUser(UpdateAdminUserRequest data)
     // הסרת רווחים מיותרים משדות הקלט
     data.Full_name = data.Full_name.Trim();
     data.Username = data.Username.Trim();
-    data.Email = data.Email.Trim();
+    data.Email = data.Email.Trim().ToLower();
 
     // בדיקה שלא הוזנו שדות ריקים או רווחים בלבד
     if (data.Full_name == "" || data.Username == "" || data.Email == "")
@@ -1467,6 +1473,12 @@ string UpdateAdminUser(UpdateAdminUserRequest data)
     if (data.Email.Contains('@') == false)
     {
         return "כתובת האימייל שהוזנה אינה תקינה.";
+    }
+
+    // בדיקה שכתובת האימייל אינה מכילה רווחים פנימיים
+    if (data.Email.Contains(' '))
+    {
+        return "כתובת האימייל אינה יכולה להכיל רווחים.";
     }
 
     // בדיקה ששדות המשתמש אינם מכילים את התו המפריד
