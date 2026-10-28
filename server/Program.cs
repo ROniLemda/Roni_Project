@@ -499,18 +499,46 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
         return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
     }
 
-    //  פנייה לגוגל לוודא שהאימות אכן אמיתי ולא בוט
-    using var httpClient = new HttpClient();
-    string verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=" + recaptchaSecretKey + "&response=" + data.CaptchaToken;
-    string captchaResponse = await httpClient.GetStringAsync(verifyUrl);
-
-    // קריאת התשובה של גוגל
-    using var jsonDoc = JsonDocument.Parse(captchaResponse);
-    bool isHuman = jsonDoc.RootElement.GetProperty("success").GetBoolean();
-
-    if (isHuman == false)
+    // בדיקה ששדה טוקן האימות של reCAPTCHA אינו ריק
+    if (data.CaptchaToken == null || data.CaptchaToken.Trim() == "")
     {
-     return "אימות האבטחה של reCAPTCHA נכשל, אנא אשר שאינך רובוט ונסה שנית.";
+        RegisterFailure(currentIp);
+        if (IsIpBlocked(currentIp) == true)
+        {
+            return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
+        }
+        return "אימות האבטחה של reCAPTCHA נכשל, אנא אשר שאינך רובוט ונסה שנית.";
+    }
+
+    try
+    {
+        // פנייה לגוגל לוודא שהאימות אכן אמיתי ולא בוט
+        using var httpClient = new HttpClient();
+        string verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=" + recaptchaSecretKey + "&response=" + data.CaptchaToken;
+        string captchaResponse = await httpClient.GetStringAsync(verifyUrl);
+
+        // קריאת התשובה של גוגל
+        using var jsonDoc = JsonDocument.Parse(captchaResponse);
+        bool isHuman = jsonDoc.RootElement.GetProperty("success").GetBoolean();
+
+        if (isHuman == false)
+        {
+            RegisterFailure(currentIp);
+            if (IsIpBlocked(currentIp) == true)
+            {
+                return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
+            }
+            return "אימות האבטחה של reCAPTCHA נכשל, אנא אשר שאינך רובוט ונסה שנית.";
+        }
+    }
+    catch
+    {
+        RegisterFailure(currentIp);
+        if (IsIpBlocked(currentIp) == true)
+        {
+            return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
+        }
+        return "אימות האבטחה של reCAPTCHA נכשל, אנא אשר שאינך רובוט ונסה שנית.";
     }
     // מצפין את הסיסמה שהמשתמש הקליד עכשיו כדי להשוות למה ששמור בטבלה
     string hashPass = HashPassword(data.Password);
