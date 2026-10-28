@@ -25,6 +25,10 @@ var otpSecretKey = builder.Configuration["Security:OtpSecretKey"] ?? "";
 // רשימה לניהול מעקב ניסיונות התחברות לפי כתובת IP
 List<IpLogin> ipList = new List<IpLogin>();
 
+// רשימה בזיכרון של מזהי בקשה של גוגל שכבר נוצלו בהצלחה
+// המטרה של הרשימה היא למנוע התקפת שידור חוזר שבה תוקף מנסה לשלוח שוב טוקן ישן
+List<string> usedGoogleNonces = new List<string>();
+
 // הוספת כלי ה-CORS לארגז הכלים של השרת
 builder.Services.AddCors();
 
@@ -1060,6 +1064,26 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
         if (data.Nonce == "" || tokenNonce != data.Nonce)
         {
             return "אימות החשבון מול Google נכשל, מזהה בקשה אינו תואם.";
+        }
+
+        // נעילת הרשימה לסנכרון תהליכונים כדי למנוע משני משתמשים לגשת אליה בו זמנית
+        lock (usedGoogleNonces)
+        {
+            // בדיקה האם מזהה הבקשה הזה כבר נוצל בעבר להתחברות
+            if (usedGoogleNonces.Contains(tokenNonce))
+            {
+                return "אימות החשבון מול Google נכשל, מזהה הבקשה כבר נוצל.";
+            }
+
+            // הוספת המזהה הנוכחי לרשימה כדי שלא ניתן יהיה להשתמש בו שוב
+            usedGoogleNonces.Add(tokenNonce);
+
+            // אם הרשימה גדלה מעל אלף מזהים מנקים את המזהה הישן ביותר שנמצא בתא הראשון
+            // הפעולה מסירה את האיבר באינדקס אפס כדי לשמור על גודל זיכרון קבוע ולמנוע הצפה של השרת
+            if (usedGoogleNonces.Count > 1000)
+            {
+                usedGoogleNonces.RemoveAt(0);
+            }
         }
 
         email = jsonDoc.RootElement.GetProperty("email").GetString() ?? ""; // שולפים את המייל המלא של המשתמש 
