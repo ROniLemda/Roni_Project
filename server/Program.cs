@@ -350,10 +350,10 @@ IpLogin GetIp(string clientIp)
     // נעילת הרשימה בעת הגישה כדי למנוע התנגשות בין בקשות מקבילות בשרת
     lock (ipList)
     {
-        // ניקוי כתובות ישנות שתקופת החסימה שלהן הסתיימה ואין להן טעויות פעילות לשמירה על יעילות הזיכרון
+        // ניקוי כתובות ישנות שהחסימה שלהן הסתיימה או שלא הייתה בהן פעילות במשך 15 דקות
         for (int i = ipList.Count - 1; i >= 0; i--)
         {
-            if (ipList[i].fails == 0 && ipList[i].unblockTime < DateTime.UtcNow)
+            if (ipList[i].unblockTime < DateTime.UtcNow && ipList[i].lastAttemptTime.AddMinutes(15) < DateTime.UtcNow)
             {
                 ipList.RemoveAt(i);
             }
@@ -372,6 +372,12 @@ IpLogin GetIp(string clientIp)
         IpLogin item = new IpLogin();
         item.ip = clientIp;
         ipList.Add(item);
+
+        // הגבלת כמות הכתובות המקסימלית בזיכרון להגנה מפני הצפה
+        if (ipList.Count > 1000)
+        {
+            ipList.RemoveAt(0);
+        }
 
         return item;
     }
@@ -403,6 +409,7 @@ void RegisterFailure(IpLogin ip)
     lock (ipList)
     {
         ip.fails = ip.fails + 1;
+        ip.lastAttemptTime = DateTime.UtcNow;
         if (ip.fails >= 5)
         {
             ip.unblockTime = DateTime.UtcNow.AddMinutes(5);
@@ -416,6 +423,7 @@ void ResetIpFailures(IpLogin ip)
     lock (ipList)
     {
         ip.fails = 0;
+        ip.lastAttemptTime = DateTime.UtcNow;
     }
 }
 
@@ -1757,4 +1765,6 @@ class IpLogin
     public int fails { get; set; } = 0;
     // זמן סיום החסימה לפי שעון השרת
     public DateTime unblockTime { get; set; }
+    // זמן הניסיון האחרון לצורך פקיעת תוקף של ניסיונות ישנים
+    public DateTime lastAttemptTime { get; set; } = DateTime.UtcNow;
 }
