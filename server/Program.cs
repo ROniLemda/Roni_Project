@@ -521,8 +521,8 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
         return "בוצעו מספר רב של בקשות ממחשב זה, אנא המתן 15 שניות לפני ניסיון נוסף.";
     }
 
-    // בדיקה ששדה טוקן האימות של reCAPTCHA אינו ריק
-    if (data.CaptchaToken == null || data.CaptchaToken.Trim() == "")
+    // בדיקה ששדה טוקן האימות של reCAPTCHA אינו ריק ואינו חורג מהאורך המותר
+    if (data.CaptchaToken == null || data.CaptchaToken.Trim() == "" || data.CaptchaToken.Length > 2048)
     {
         RegisterFailure(currentIp);
         if (IsIpBlocked(currentIp) == true)
@@ -536,7 +536,9 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
     {
         // פנייה לגוגל לוודא שהאימות אכן אמיתי ולא בוט
         using var httpClient = new HttpClient();
-        string verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=" + recaptchaSecretKey + "&response=" + data.CaptchaToken;
+        string encodedToken = Uri.EscapeDataString(data.CaptchaToken.Trim());
+        string encodedSecret = Uri.EscapeDataString(recaptchaSecretKey);
+        string verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=" + encodedSecret + "&response=" + encodedToken;
         string captchaResponse = await httpClient.GetStringAsync(verifyUrl);
 
         // קריאת התשובה של גוגל
