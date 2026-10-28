@@ -389,16 +389,11 @@ IpLogin GetIp(string clientIp)
             }
         }
 
-        // אם ה-IP לא קיים ברשימה יוצרים אובייקט חדש ומוסיפים אותו
-        IpLogin item = new IpLogin();
-        item.ip = clientIp;
-        ipList.Add(item);
-
-        // הגבלת כמות הכתובות המקסימלית בזיכרון תוך העדפת הסרת כתובת שאינה חסומה
-        if (ipList.Count > 1000)
+        // אם הרשימה הגיעה לתקרה מפנים מקום לפני הוספת הרשומה החדשה
+        if (ipList.Count >= 2000)
         {
             int indexToRemove = 0;
-            // חיפוש הרשומה הראשונה שאינה חסומה כרגע
+            // חיפוש הרשומה הקיימת הראשונה שאינה חסומה כרגע
             for (int i = 0; i < ipList.Count; i++)
             {
                 if (ipList[i].unblockTime <= DateTime.UtcNow)
@@ -409,6 +404,11 @@ IpLogin GetIp(string clientIp)
             }
             ipList.RemoveAt(indexToRemove);
         }
+
+        // אם ה-IP לא קיים ברשימה יוצרים אובייקט חדש ומוסיפים אותו
+        IpLogin item = new IpLogin();
+        item.ip = clientIp;
+        ipList.Add(item);
 
         return item;
     }
