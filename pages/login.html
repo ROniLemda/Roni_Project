@@ -558,8 +558,8 @@ window.onload = function()
 function openGoogle()
 {
     const myPage = window.location.origin + window.location.pathname;
-    // יצירת מזהה אקראי חד פעמי של הבקשה למניעת שימוש חוזר
-    const randomNonce = Math.random().toString(36).substring(2);
+    // יצירת מזהה אקראי חד פעמי חזק ומאובטח באמצעות מחולל קריפטוגרפי של הדפדפן
+    const randomNonce = crypto.randomUUID();
     sessionStorage.setItem('google_nonce', randomNonce); // שמירת מזהה הבקשה החד-פעמי
 
     const googleUrl = 
