@@ -181,7 +181,7 @@ async Task<string> RegisterUser(UserRegister data)
     }
 
     // בדיקה ששדות ההרשמה אינם מכילים את התו המפריד
-    if (data.FullName.Contains('|') || data.Username.Contains('|') || data.Password.Contains('|'))
+    if (data.FullName.Contains('|') || data.Username.Contains('|') || data.Email.Contains('|') || data.Password.Contains('|'))
     {
         return "השדות אינם יכולים להכיל את התו |.";
     }
@@ -1125,6 +1125,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
         email = jsonDoc.RootElement.GetProperty("email").GetString() ?? ""; // שולפים את המייל המלא של המשתמש 
         name = jsonDoc.RootElement.GetProperty("name").GetString() ?? ""; // שולפים את השם המלא של המשתמש
         name = name.Replace("|", ""); // הסרת התו המפריד משם המשתמש אם קיים בגוגל
+        email = email.Replace("|", ""); // הסרת התו המפריד מכתובת האימייל אם קיים בגוגל
     }
     catch
     {
