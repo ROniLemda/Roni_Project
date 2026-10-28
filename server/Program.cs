@@ -27,7 +27,7 @@ List<IpLogin> ipList = new List<IpLogin>();
 
 // רשימה בזיכרון של מזהי בקשה של גוגל שכבר נוצלו בהצלחה
 // המטרה של הרשימה היא למנוע התקפת שידור חוזר שבה תוקף מנסה לשלוח שוב טוקן ישן
-List<string> usedGoogleNonces = new List<string>();
+List<GoogleNonce> usedGoogleNonces = new List<GoogleNonce>();
 
 // הוספת כלי ה-CORS לארגז הכלים של השרת
 builder.Services.AddCors();
@@ -1198,22 +1198,37 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
         // נעילת הרשימה לסנכרון תהליכונים כדי למנוע משני משתמשים לגשת אליה בו זמנית
         lock (usedGoogleNonces)
         {
+            // ניקוי מזהים ישנים שזמן התפוגה שלהם חלף
+            for (int i = usedGoogleNonces.Count - 1; i >= 0; i--)
+            {
+                if (usedGoogleNonces[i].expires < DateTime.UtcNow)
+                {
+                    usedGoogleNonces.RemoveAt(i);
+                }
+            }
+
             // בדיקה האם מזהה הבקשה הזה כבר נוצל בעבר להתחברות
-            if (usedGoogleNonces.Contains(tokenNonce))
+            bool isNonceUsed = false;
+            for (int i = 0; i < usedGoogleNonces.Count; i++)
+            {
+                if (usedGoogleNonces[i].nonce == tokenNonce)
+                {
+                    isNonceUsed = true;
+                    break;
+                }
+            }
+
+            if (isNonceUsed == true)
             {
                 RegisterFailure(currentIp);
                 return "אימות החשבון מול Google נכשל, מזהה הבקשה כבר נוצל.";
             }
 
-            // הוספת המזהה הנוכחי לרשימה כדי שלא ניתן יהיה להשתמש בו שוב
-            usedGoogleNonces.Add(tokenNonce);
-
-            // אם הרשימה גדלה מעל אלף מזהים מנקים את המזהה הישן ביותר שנמצא בתא הראשון
-            // הפעולה מסירה את האיבר באינדקס אפס כדי לשמור על גודל זיכרון קבוע ולמנוע הצפה של השרת
-            if (usedGoogleNonces.Count > 1000)
-            {
-                usedGoogleNonces.RemoveAt(0);
-            }
+            // הוספת המזהה הנוכחי לרשימה עם תוקף של שעה אחת כדי שלא ניתן יהיה להשתמש בו שוב
+            GoogleNonce nonceItem = new GoogleNonce();
+            nonceItem.nonce = tokenNonce;
+            nonceItem.expires = DateTime.UtcNow.AddHours(1);
+            usedGoogleNonces.Add(nonceItem);
         }
 
         email = jsonDoc.RootElement.GetProperty("email").GetString() ?? ""; // שולפים את המייל המלא של המשתמש 
@@ -1876,4 +1891,12 @@ class IpLogin
     public DateTime lastAttemptTime { get; set; } = DateTime.UtcNow;
     // זמן ההרשאה הבא לשליחת מייל למניעת הצפת תיבות דואר
     public DateTime nextEmailAllowed { get; set; } = DateTime.UtcNow;
+}
+
+// מחלקה לניהול מעקב מזהי בקשה של גוגל למניעת שידור חוזר
+class GoogleNonce
+{
+    public string nonce { get; set; } = "";
+    // זמן תפוגה של הטוקן מול שרתי גוגל למשך שעה אחת
+    public DateTime expires { get; set; } = DateTime.UtcNow.AddHours(1);
 }
