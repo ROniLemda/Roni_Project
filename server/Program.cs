@@ -153,12 +153,21 @@ async Task<bool> SendEmail(string email, string code)
 }
 
 //  פונקציה שמקבלת את טופס נתוני הרישום מהאתר ומחזירה הודעת טקסט שההרשמה הצליחה
-async Task<string> RegisterUser(UserRegister data)
+async Task<string> RegisterUser(UserRegister data, HttpContext context)
 {
     // בדיקה שכל השדות הוזנו כראוי
     if (data.FullName == null || data.Username == null || data.Email == null || data.Password == null)
     {
         return "נא למלא את כל שדות החובה.";
+    }
+
+    // שליפת כתובת ה-IP ובדיקת מגבלת קצב שליחת מיילים להגנה מפני הצפה
+    string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+    IpLogin currentIp = GetIp(clientIp);
+
+    if (CanIpSendEmail(currentIp) == false)
+    {
+        return "בוצעו מספר רב של בקשות ממחשב זה, אנא המתן 15 שניות לפני ניסיון נוסף.";
     }
 
     // הסרת רווחים מיותרים משדות השם והאימייל
@@ -430,6 +439,27 @@ void ResetIpFailures(IpLogin ip)
     {
         ip.fails = 0;
         ip.lastAttemptTime = DateTime.UtcNow;
+    }
+}
+
+// פונקציית עזר לבדיקה והגבלת קצב שליחת מיילים לפי כתובת IP
+bool CanIpSendEmail(IpLogin ip)
+{
+    lock (ipList)
+    {
+        if (ip.unblockTime > DateTime.UtcNow)
+        {
+            return false;
+        }
+
+        if (ip.nextEmailAllowed > DateTime.UtcNow)
+        {
+            return false;
+        }
+
+        // הגבלת שליחת מייל מאותו מחשב לפעם אחת בכל 15 שניות
+        ip.nextEmailAllowed = DateTime.UtcNow.AddSeconds(15);
+        return true;
     }
 }
 
@@ -847,12 +877,21 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
 }
 
 // פונקציה לשליחה מחדש של קוד אימות עם מנגנון הגנה מפני הצפת אימיילים
-async Task<string> ResendCode(ResendCodeRequest data)
+async Task<string> ResendCode(ResendCodeRequest data, HttpContext context)
 {
     // בדיקה ששדה האימייל או שם המשתמש אינו ריק
     if (data.Email == null)
     {
         return "נא למלא את כל שדות החובה.";
+    }
+
+    // שליפת כתובת ה-IP ובדיקת מגבלת קצב שליחת מיילים להגנה מפני הצפה
+    string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+    IpLogin currentIp = GetIp(clientIp);
+
+    if (CanIpSendEmail(currentIp) == false)
+    {
+        return "בוצעו מספר רב של בקשות ממחשב זה, אנא המתן 15 שניות לפני ניסיון נוסף.";
     }
 
     // הסרת רווחים מיותרים והמרה לאותיות קטנות
@@ -1780,4 +1819,6 @@ class IpLogin
     public DateTime unblockTime { get; set; }
     // זמן הניסיון האחרון לצורך פקיעת תוקף של ניסיונות ישנים
     public DateTime lastAttemptTime { get; set; } = DateTime.UtcNow;
+    // זמן ההרשאה הבא לשליחת מייל למניעת הצפת תיבות דואר
+    public DateTime nextEmailAllowed { get; set; } = DateTime.UtcNow;
 }
