@@ -509,6 +509,12 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
         return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
     }
 
+    // בדיקת מגבלת קצב שליחת מיילים להגנה מפני הצפה
+    if (CanIpSendEmail(currentIp) == false)
+    {
+        return "בוצעו מספר רב של בקשות ממחשב זה, אנא המתן 15 שניות לפני ניסיון נוסף.";
+    }
+
     // בדיקה ששדה טוקן האימות של reCAPTCHA אינו ריק
     if (data.CaptchaToken == null || data.CaptchaToken.Trim() == "")
     {
@@ -592,10 +598,9 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
              return "המשתמש אינו קיים במערכת בדוק את פרטי ההתחברות ונסה שנית.";
         }
 
-        // איפוס מונה הניסיונות השגויים של ה-IP בעקבות התחברות תקינה בצורה מסונכרנת
-        ResetIpFailures(currentIp);
-
-        reader.Close(); // סוגרים את הקורא כדי שנוכל לעדכן את השורה בטבלה
+        // סגירת הקורא כדי שנוכל לעדכן את השורה בטבלה
+        // איפוס מונה כישלונות ה-IP מתבצע רק לאחר אימות ה-OTP המלא ולא בשלב הסיסמה
+        reader.Close();
 
         // הפקת קוד אימות חדש בן 6 ספרות באמצעות מחולל מאובטח והצפנתו
         // שודרג מ Random.Shared.Next להגנה מירבית בתהליך ההתחברות הסבר במחברת
@@ -845,7 +850,7 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
         reader.Close(); // סגירת הקורא כדי לאפשר פעולות עדכון במסד הנתונים
 
         // קידום מונה הטעויות במסד הנתונים ושליפת הערך המעודכן ישירות
-        string updateSql = "UPDATE users SET otp_count = otp_count + 1 WHERE email = @email OR username = @email RETURNING otp_count";
+        string updateSql = "UPDATE users SET otp_count = otp_count + 1 WHERE email = @email OR LOWER(username) = @email RETURNING otp_count";
         using var updateCmd = new NpgsqlCommand(updateSql, connection);
         updateCmd.Parameters.AddWithValue("@email", data.Email);
         using var countReader = updateCmd.ExecuteReader();
@@ -861,8 +866,8 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
         // בדיקה האם הגענו ל5 טעויות ומחיקת הקוד
         if (currentAttempts >= 5)
         {
-            // מחיקת קוד האימות ואיפוס המשתנה במסד למניעת שימוש חוזר בקוד שנחסם
-            string lockSql = "UPDATE users SET reset_code_hash = NULL, reset_code_expires = NULL, otp_count = 0 WHERE email = @email OR LOWER(username) = @email";
+            // מחיקת קוד האימות ואיפוס מונה הטעויות במסד למניעת שימוש חוזר בקוד שנחסם תוך שמירת הצינון
+            string lockSql = "UPDATE users SET reset_code_hash = NULL, otp_count = 0 WHERE email = @email OR LOWER(username) = @email";
             using var lockCmd = new NpgsqlCommand(lockSql, connection);
             lockCmd.Parameters.AddWithValue("@email", data.Email);
             lockCmd.ExecuteNonQuery();
