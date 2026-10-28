@@ -377,13 +377,45 @@ IpLogin GetIp(string clientIp)
     }
 }
 
+// פונקציית עזר לבדיקה האם ה-IP חסום כרגע בצורה מסונכרנת
+bool IsIpBlocked(IpLogin ip)
+{
+    lock (ipList)
+    {
+        if (ip.unblockTime > DateTime.UtcNow)
+        {
+            return true;
+        }
+
+        // אם תקופת החסימה הסתיימה מאפסים את המונה
+        if (ip.fails >= 5)
+        {
+            ip.fails = 0;
+        }
+
+        return false;
+    }
+}
+
 // פונקציית עזר להעלאת מונה הכישלונות של כתובת ה-IP וחסימתה לחמש דקות לאחר חמישה כישלונות
 void RegisterFailure(IpLogin ip)
 {
-    ip.fails = ip.fails + 1;
-    if (ip.fails >= 5)
+    lock (ipList)
     {
-        ip.unblockTime = DateTime.UtcNow.AddMinutes(5);
+        ip.fails = ip.fails + 1;
+        if (ip.fails >= 5)
+        {
+            ip.unblockTime = DateTime.UtcNow.AddMinutes(5);
+        }
+    }
+}
+
+// פונקציית עזר לאיפוס מונה הכישלונות של כתובת ה-IP בעקבות פעולה מוצלחת
+void ResetIpFailures(IpLogin ip)
+{
+    lock (ipList)
+    {
+        ip.fails = 0;
     }
 }
 
@@ -418,15 +450,9 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
     IpLogin currentIp = GetIp(clientIp);
 
     // בדיקה האם ה-IP חסום כרגע לפי שעון השרת
-    if (currentIp.unblockTime > DateTime.UtcNow)
+    if (IsIpBlocked(currentIp) == true)
     {
         return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
-    }
-
-    // אם תקופת החסימה הסתיימה מאפסים את המונה כדי לתת 5 ניסיונות חדשים
-    if (currentIp.fails >= 5)
-    {
-        currentIp.fails = 0;
     }
 
     //  פנייה לגוגל לוודא שהאימות אכן אמיתי ולא בוט
@@ -460,11 +486,10 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
     // האם פוסטגרס מצא שורה בכלל
     if (reader.Read() == false)
     {
-        // העלאת מונה הניסיונות השגויים עבור ה-IP הזה
-        currentIp.fails = currentIp.fails + 1;
-        if (currentIp.fails >= 5)
+        // העלאת מונה הניסיונות השגויים עבור ה-IP הזה בצורה מסונכרנת
+        RegisterFailure(currentIp);
+        if (IsIpBlocked(currentIp) == true)
         {
-            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
             return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
         }
 
@@ -485,8 +510,8 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
              return "המשתמש אינו קיים במערכת בדוק את פרטי ההתחברות ונסה שנית.";
         }
 
-        // איפוס מונה הניסיונות השגויים של ה-IP בעקבות התחברות תקינה
-        currentIp.fails = 0;
+        // איפוס מונה הניסיונות השגויים של ה-IP בעקבות התחברות תקינה בצורה מסונכרנת
+        ResetIpFailures(currentIp);
 
         reader.Close(); // סוגרים את הקורא כדי שנוכל לעדכן את השורה בטבלה
 
@@ -524,11 +549,10 @@ async Task<string> LoginUser(UserLogin data, HttpContext context)
     }
     else
     {
-        // העלאת מונה הניסיונות השגויים עבור ה-IP הזה
-        currentIp.fails = currentIp.fails + 1;
-        if (currentIp.fails >= 5)
+        // העלאת מונה הניסיונות השגויים עבור ה-IP הזה בצורה מסונכרנת
+        RegisterFailure(currentIp);
+        if (IsIpBlocked(currentIp) == true)
         {
-            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
             return "בוצעו 5 ניסיונות התחברות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
         }
 
@@ -668,15 +692,9 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
     IpLogin currentIp = GetIp(clientIp);
 
     // בדיקה האם ה-IP חסום כרגע לפי שעון השרת למניעת ניחוש קודים
-    if (currentIp.unblockTime > DateTime.UtcNow)
+    if (IsIpBlocked(currentIp) == true)
     {
         return "בוצעו 5 ניסיונות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות לאמת נחסמה, אנא נסה שוב בעוד מספר דקות.";
-    }
-
-    // אם תקופת החסימה הסתיימה מאפסים את המונה כדי לתת 5 ניסיונות חדשים
-    if (currentIp.fails >= 5)
-    {
-        currentIp.fails = 0;
     }
 
     //  מצפינים את הקוד שהמשתמש הקליד עכשיו באמצעות פונקציית העזר כדי להשוות ל-Hash ששמור
@@ -694,11 +712,10 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
     using var reader = command.ExecuteReader();
     if (reader.Read() == false)
     {
-        // העלאת מונה הכישלונות עבור כתובת ה-IP וחסימה במידת הצורך
-        currentIp.fails = currentIp.fails + 1;
-        if (currentIp.fails >= 5)
+        // העלאת מונה הכישלונות עבור כתובת ה-IP וחסימה במידת הצורך בצורה מסונכרנת
+        RegisterFailure(currentIp);
+        if (IsIpBlocked(currentIp) == true)
         {
-            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
             return "בוצעו 5 ניסיונות שגויים, לצורכי אבטחה והגנה על החשבון האפשרות לאמת נחסמה, אנא נסה שוב בעוד מספר דקות.";
         }
 
@@ -740,12 +757,8 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
     // בדיקה האם הקוד המוצפן שהוקלד תואם למה ששמור
     if (hashedInputCode != savedHashedCode)
     {
-        // העלאת מונה הכישלונות של ה-IP וחסימה ל-5 דקות אם הגיע ל-5
-        currentIp.fails = currentIp.fails + 1;
-        if (currentIp.fails >= 5)
-        {
-            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
-        }
+        // העלאת מונה הכישלונות של ה-IP וחסימה ל-5 דקות אם הגיע ל-5 בצורה מסונכרנת
+        RegisterFailure(currentIp);
 
         reader.Close(); // סגירת הקורא כדי לאפשר פעולות עדכון במסד הנתונים
 
@@ -782,8 +795,8 @@ string VerifyResetCode(VerifyCodeRequest data, HttpContext context)
 
     reader.Close(); // סגירת הקורא כי הקוד נמצא נכון ותקין
 
-    // איפוס מונה הכישלונות של ה-IP בעקבות אימות קוד תקין
-    currentIp.fails = 0;
+    // איפוס מונה הכישלונות של ה-IP בעקבות אימות קוד תקין בצורה מסונכרנת
+    ResetIpFailures(currentIp);
 
     // יצירת טוקן התחברות ייחודי של 32 תווים ללא מקפים שמשמש כרטיס כניסה למערכת
     string authToken = Guid.NewGuid().ToString("N");
@@ -1026,7 +1039,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
     string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
     IpLogin currentIp = GetIp(clientIp);
 
-    if (currentIp.unblockTime > DateTime.UtcNow)
+    if (IsIpBlocked(currentIp) == true)
     {
         return "בוצעו מספר רב של ניסיונות, לצורכי אבטחה האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
     }
@@ -1160,8 +1173,8 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
             SaveAdminLog("התחברות מנהל", "מנהל מערכת (" + name + ") התחבר למערכת דרך Google");
         }
 
-        // איפוס מונה הכישלונות של ה-IP בעקבות התחברות מוצלחת
-        currentIp.fails = 0;
+        // איפוס מונה הכישלונות של ה-IP בעקבות התחברות מוצלחת בצורה מסונכרנת
+        ResetIpFailures(currentIp);
 
         return "ההתחברות באמצעות Google בוצעה בהצלחה, לחץ המשך על מנת לעבור לסביבת העבודה שלך.|" + name + "|" + email + "|" + authToken;
     }
@@ -1218,8 +1231,8 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
     insertCmd.Parameters.AddWithValue("@expires", tokenExpires);
     insertCmd.ExecuteNonQuery();
 
-    // איפוס מונה הכישלונות של ה-IP בעקבות התחברות מוצלחת
-    currentIp.fails = 0;
+    // איפוס מונה הכישלונות של ה-IP בעקבות התחברות מוצלחת בצורה מסונכרנת
+    ResetIpFailures(currentIp);
 
     return "החשבון נוצר בהצלחה באמצעות Google, מיד תועבר לסביבת העבודה שלך.|" + name + "|" + email + "|" + authToken;
 }
