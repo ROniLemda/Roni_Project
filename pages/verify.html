@@ -384,73 +384,85 @@ resendBtn.onclick = async function(e)
     const urlParams = new URLSearchParams(window.location.search);
     const userEmail = urlParams.get('email');
 
-   const response = await fetch(API_URL + '/api/resend-code', 
-  {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: userEmail })
-  });
-
-  // אם השרת התרסק (קוד 500) או שיש בעיית תקשורת כללית
-  if (response.ok === false) 
-  {
-    isWaiting = false; // שחרור הנעילה אם חלה שגיאת תקשורת
-    Swal.fire({
-        icon: 'error',
-        text: 'אירעה תקלה בשרת בעת שליחת המייל, אנא נסה שוב מאוחר יותר.',
-        confirmButtonText: 'סגירה',
-        confirmButtonColor: '#0052cc'
-    });
-    return; // עוצרים מיד ולא מציגים שום שגיאה באנגלית למשתמש
-  }
-
-  // קוראים את הודעת הטקסט שהשרת מחזיר לנו
-  const result = await response.text();
-
-// אם התשובה מהשרת מכילה את המילה "נשלח" סימן שהתשובה עברה
-if (result.includes('נשלח')) 
-{
-    // מציגים הודעת הצלחה ירוקה
-    Swal.fire({
-        icon: 'success',
-        text: result,
-        confirmButtonText: 'אישור',
-        confirmButtonColor: '#58ED6A'
-    });
-
-    // הפעלת נעילה של 60 שניות
-    isWaiting = true;
-    let seconds = 60;
-    resendBtn.style.opacity = '0.5'; // הופך את הכפתור לחצי שקוף
-    resendBtn.textContent = 'שלח שוב בעוד ' + seconds + ' שניות';
-
-    // שעון שמוריד שנייה אחת כל 1000 אלפיות שנייה (שנייה אחת)
-    const timer = setInterval(function() 
+    try
     {
-        seconds--;  
-        resendBtn.textContent = 'שלח שוב בעוד ' + seconds + ' שניות';
-
-        // כשהגענו ל-0
-        if (seconds === 0) 
+        const response = await fetch(API_URL + '/api/resend-code', 
         {
-            clearInterval(timer);             // עוצר את השעון
-            isWaiting = false;                // מכבה את הנעילה
-            resendBtn.textContent = 'Resend'; // מחזיר את הטקסט המקורי
-            resendBtn.style.opacity = '1';    // מחזיר צבע מלא
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userEmail })
+        });
+
+        // אם השרת התרסק קוד 500 או שיש בעיית תקשורת כללית
+        if (response.ok === false) 
+        {
+            isWaiting = false; // שחרור הנעילה אם חלה שגיאת תקשורת
+            Swal.fire({
+                icon: 'error',
+                text: 'אירעה תקלה בשרת בעת שליחת המייל, אנא נסה שוב מאוחר יותר.',
+                confirmButtonText: 'סגירה',
+                confirmButtonColor: '#0052cc'
+            });
+            return; // עוצרים מיד ולא מציגים שום שגיאה באנגלית למשתמש
         }
-    }, 1000);
-  }
-else 
-{
-    isWaiting = false; // שחרור הנעילה אם השרת החזיר שגיאה
-    // אחרת הייתה שגיאה כלשהי (האימייל לא קיים, בעיית תקשורת וכו')
-    Swal.fire({
-        icon: 'error',
-        text: result,
-        confirmButtonText: 'סגירה',
-        confirmButtonColor: '#0052cc'
-    });
-}
+
+        // קוראים את הודעת הטקסט שהשרת מחזיר לנו
+        const result = await response.text();
+
+        // אם התשובה מהשרת מכילה את המילה "נשלח" סימן שהתשובה עברה
+        if (result.includes('נשלח')) 
+        {
+            // מציגים הודעת הצלחה ירוקה
+            Swal.fire({
+                icon: 'success',
+                text: result,
+                confirmButtonText: 'אישור',
+                confirmButtonColor: '#58ED6A'
+            });
+
+            // הפעלת נעילה של 60 שניות
+            isWaiting = true;
+            let seconds = 60;
+            resendBtn.style.opacity = '0.5'; // הופך את הכפתור לחצי שקוף
+            resendBtn.textContent = 'שלח שוב בעוד ' + seconds + ' שניות';
+
+            // שעון שמוריד שנייה אחת כל 1000 אלפיות שנייה
+            const timer = setInterval(function() 
+            {
+                seconds--;  
+                resendBtn.textContent = 'שלח שוב בעוד ' + seconds + ' שניות';
+
+                // כשהגענו ל-0
+                if (seconds === 0) 
+                {
+                    clearInterval(timer);             // עוצר את השעון
+                    isWaiting = false;                // מכבה את הנעילה
+                    resendBtn.textContent = 'Resend'; // מחזיר את הטקסט המקורי
+                    resendBtn.style.opacity = '1';    // מחזיר צבע מלא
+                }
+            }, 1000);
+        }
+        else 
+        {
+            isWaiting = false; // שחרור הנעילה אם השרת החזיר שגיאה
+            Swal.fire({
+                icon: 'error',
+                text: result,
+                confirmButtonText: 'סגירה',
+                confirmButtonColor: '#0052cc'
+            });
+        }
+    }
+    catch
+    {
+        isWaiting = false; // שחרור הנעילה במקרה של שגיאת תקשורת ברשת
+        Swal.fire({
+            icon: 'error',
+            text: 'אירעה שגיאת תקשורת ברשת, אנא בדוק את החיבור ונסה שוב.',
+            confirmButtonText: 'סגירה',
+            confirmButtonColor: '#0052cc'
+        });
+    }
 
 }
 </script>
