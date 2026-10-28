@@ -19,6 +19,9 @@ var brevoTemplateId = int.Parse(builder.Configuration["Brevo:TemplateId"] ?? "1"
 // שליפת המפתח הסודי של reCAPTCHA
 var recaptchaSecretKey = builder.Configuration["Recaptcha:SecretKey"] ?? "";
 
+// שליפת המפתח הסודי לגיבוב קוד האימות מתוך קובץ ההגדרות
+var otpSecretKey = builder.Configuration["Security:OtpSecretKey"] ?? "";
+
 // רשימה לניהול מעקב ניסיונות התחברות לפי כתובת IP
 List<IpLogin> ipList = new List<IpLogin>();
 
@@ -96,8 +99,7 @@ string HashPassword(string password)
 // שרשור מפתח סודי שקיים רק בקוד השרת מונע אפשרות של פיצוח אופליין גם אם מסד הנתונים נחשף
 string HashOtp(string code)
 {
-    string serverSecretKey = "HatimaPlus_Security_Key_2026";
-    return HashPassword(code + serverSecretKey);
+    return HashPassword(code + otpSecretKey);
 }
     
 // פונקציה לשליחת קוד אימות במייל באמצעות Brevo
