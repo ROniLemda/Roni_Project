@@ -377,6 +377,16 @@ IpLogin GetIp(string clientIp)
     }
 }
 
+// פונקציית עזר להעלאת מונה הכישלונות של כתובת ה-IP וחסימתה לחמש דקות לאחר חמישה כישלונות
+void RegisterFailure(IpLogin ip)
+{
+    ip.fails = ip.fails + 1;
+    if (ip.fails >= 5)
+    {
+        ip.unblockTime = DateTime.UtcNow.AddMinutes(5);
+    }
+}
+
 // פונקציית התחברות עם אימות דו שלבי (2FA)
 async Task<string> LoginUser(UserLogin data, HttpContext context)
 {
@@ -1012,15 +1022,6 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
     }
 
     // הסרת רווחים מיותרים משדות הקלט
-    data.Token = data.Token.Trim();
-    data.Nonce = data.Nonce.Trim();
-
-    // בדיקת אבטחה בשרת לוודא שאף שדה אינו ריק או חורג מהאורך המקסימלי
-    if (data.Token == "" || data.Token.Length > 2048 || data.Nonce.Length > 100)
-    {
-        return "אימות החשבון מול Google נכשל, נתונים לא תקינים.";
-    }
-
     // שליפת כתובת ה-IP ובדיקת חסימה למניעת הצפת קריאות לשירות גוגל
     string clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
     IpLogin currentIp = GetIp(clientIp);
@@ -1028,6 +1029,16 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
     if (currentIp.unblockTime > DateTime.UtcNow)
     {
         return "בוצעו מספר רב של ניסיונות, לצורכי אבטחה האפשרות להתחבר נחסמה, אנא נסה שוב בעוד מספר דקות.";
+    }
+
+    data.Token = data.Token.Trim();
+    data.Nonce = data.Nonce.Trim();
+
+    // בדיקת אבטחה בשרת לוודא שאף שדה אינו ריק או חורג מהאורך המקסימלי
+    if (data.Token == "" || data.Token.Length > 2048 || data.Nonce.Length > 100)
+    {
+        RegisterFailure(currentIp);
+        return "אימות החשבון מול Google נכשל, נתונים לא תקינים.";
     }
 
     string email = "";
@@ -1046,6 +1057,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
         string audience = jsonDoc.RootElement.GetProperty("aud").GetString() ?? "";
         if (audience != "541544347287-kike3l6ru9nuroq4thre6tuvreffa8s2.apps.googleusercontent.com")
         {
+            RegisterFailure(currentIp);
             return "אימות החשבון מול Google נכשל, מזהה אפליקציה לא מורשה.";
         }
 
@@ -1054,6 +1066,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
         string isVerified = jsonDoc.RootElement.GetProperty("email_verified").GetString() ?? "";
         if (isVerified != "true")
         {
+            RegisterFailure(currentIp);
             return "כתובת האימייל בחשבון Google אינה מאומתת.";
         }
 
@@ -1063,6 +1076,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
         // בדיקת אבטחה שמוודאת שהמספר שהדפדפן שלח תואם למה שגוגל חתמה
         if (data.Nonce == "" || tokenNonce != data.Nonce)
         {
+            RegisterFailure(currentIp);
             return "אימות החשבון מול Google נכשל, מזהה בקשה אינו תואם.";
         }
 
@@ -1072,6 +1086,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
             // בדיקה האם מזהה הבקשה הזה כבר נוצל בעבר להתחברות
             if (usedGoogleNonces.Contains(tokenNonce))
             {
+                RegisterFailure(currentIp);
                 return "אימות החשבון מול Google נכשל, מזהה הבקשה כבר נוצל.";
             }
 
@@ -1092,11 +1107,7 @@ async Task<string> GoogleLogin(GoogleLoginRequest data, HttpContext context)
     }
     catch
     {
-        currentIp.fails = currentIp.fails + 1;
-        if (currentIp.fails >= 5)
-        {
-            currentIp.unblockTime = DateTime.UtcNow.AddMinutes(5);
-        }
+        RegisterFailure(currentIp);
         return "אימות החשבון מול Google נכשל, אנא נסה שנית.";
     }
 
